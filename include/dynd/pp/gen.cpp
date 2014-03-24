@@ -110,9 +110,9 @@ int main(int argc, char **argv) {
 
     fout << endl;
 
-    for (int i = 8; i <= pp_int_max; i++) {
-        fout << "#define DYND_PP_CAT_" << i << "(A0" << argsep(false) << args("A", 1, i) << ") DYND_PP_CAT_2(A0"
-            << argsep(false) << "DYND_PP_CAT_" << i - 1 << "(" << args("A", 1, i) << "))" << endl;
+    for (int i = 3; i <= pp_int_max; i++) {
+        fout << "#define DYND_PP_CAT_" << i << "(HEAD" << argsep(false) << "...) DYND_PP_CAT_2(HEAD";
+        fout << argsep(false) << "DYND_PP_CAT_" << i - 1 << "(__VA_ARGS__))" << endl;
     }
 
     fout << endl;
@@ -133,6 +133,26 @@ int main(int argc, char **argv) {
     fout << "#define DYND_PP_DEC(A) DYND_PP_CAT_2(DYND_PP_DEC_, A)" << endl;
     for (int i = 1; i <= pp_int_max; i++) {
         fout << "#define DYND_PP_DEC_" << i << " " << i - 1 << endl;
+    }
+
+    fout << endl;
+
+    fout << "#define DYND_PP_SLICE_FROM(INDEX, ...) DYND_PP_CAT_2(DYND_PP_SLICE_FROM_, INDEX)(__VA_ARGS__)" << endl;
+    fout << "#define DYND_PP_SLICE_FROM_0(...) __VA_ARGS__" << endl;
+    fout << "#define DYND_PP_SLICE_FROM_1(HEAD, ...) __VA_ARGS__" << endl;
+    for (int i = 2; i < pp_int_max; i++) {
+        fout << "#define DYND_PP_SLICE_FROM_" << i << "(HEAD, ...) DYND_PP_SLICE_FROM_" << i - 1 << "(__VA_ARGS__)" << endl;
+    }
+
+    fout << endl;
+
+    fout << "#define DYND_PP_SLICE_TO(INDEX" << argsep(false) << "...) DYND_PP_CAT_2(DYND_PP_SLICE_TO_";
+    fout << argsep(false) << "INDEX)(__VA_ARGS__)" << endl;
+    fout << "#define DYND_PP_SLICE_TO_0(...)" << endl;
+    fout << "#define DYND_PP_SLICE_TO_1(HEAD" << argsep(false) << "...) HEAD" << endl;
+    for (int i = 2; i < pp_int_max; i++) {
+        fout << "#define DYND_PP_SLICE_TO_" << i << "(HEAD" << argsep(false) << "...) HEAD";
+        fout << argsep(false) << "DYND_PP_SLICE_TO_" << i - 1 << "(__VA_ARGS__)" << endl;
     }
 
     fout << endl;
