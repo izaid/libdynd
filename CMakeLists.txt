@@ -75,15 +75,27 @@ else()
         if (NOT "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "4.6")
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmax-errors=20")
         endif()
+        # Enable C++11 features for gcc >= 4.7 when CUDA support is disabled
+        if (NOT "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "4.7" AND
+                NOT ${DYND_CUDA})
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+        endif()
     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=20")
         # Apple has done this weird thing where its Clang reports a different
         # version than the official Clang.
         # TODO: someone more OS X-savvy will have to fine-tune this.
         if (APPLE OR "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "3.2")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+            # Enable C++11 features when CUDA support is disabled
+            if (NOT ${DYND_CUDA})
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+            endif()
         else()
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wdocumentation")
+            # Enable C++11 features when CUDA support is disabled
+            if (NOT ${DYND_CUDA})
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+            endif()
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wdocumentation")
         endif()
     endif()
 endif()
@@ -91,7 +103,7 @@ endif()
 # Get the git revision
 include(GetGitRevisionDescriptionDyND)
 get_git_head_revision("${CMAKE_CURRENT_SOURCE_DIR}" GIT_REFSPEC DYND_GIT_SHA1)
-git_describe("${CMAKE_CURRENT_SOURCE_DIR}" DYND_VERSION_STRING --dirty --match "v[0-9]*")
+git_describe("${CMAKE_CURRENT_SOURCE_DIR}" DYND_VERSION_STRING --dirty --always --match "v*")
 message(STATUS "DyND version: ${DYND_VERSION_STRING}")
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/src/dynd/git_version.cpp.in"
@@ -144,8 +156,11 @@ set(libdynd_SRC
     src/dynd/types/cuda_device_type.cpp
     src/dynd/types/datashape_formatter.cpp
     src/dynd/types/datashape_parser.cpp
+    src/dynd/types/date_parser.cpp
     src/dynd/types/date_type.cpp
+    src/dynd/types/date_util.cpp
     src/dynd/types/datetime_type.cpp
+    src/dynd/types/datetime_util.cpp
     src/dynd/types/type_type.cpp
     src/dynd/types/dynd_complex.cpp
     src/dynd/types/dynd_float16.cpp
@@ -190,8 +205,11 @@ set(libdynd_SRC
     include/dynd/types/cuda_device_type.hpp
     include/dynd/types/datashape_formatter.hpp
     include/dynd/types/datashape_parser.hpp
+    include/dynd/types/date_parser.hpp
     include/dynd/types/date_type.hpp
+    include/dynd/types/date_util.hpp
     include/dynd/types/datetime_type.hpp
+    include/dynd/types/datetime_util.hpp
     include/dynd/types/type_type.hpp
     include/dynd/types/dynd_complex.hpp
     include/dynd/types/dynd_float16.hpp
@@ -350,6 +368,7 @@ set(libdynd_SRC
     src/dynd/dim_iter.cpp
     src/dynd/shape_tools.cpp
     src/dynd/string_encodings.cpp
+    src/dynd/view.cpp
     include/dynd/atomic_refcount.hpp
     include/dynd/auxiliary_data.hpp
     include/dynd/buffer_storage.hpp
@@ -370,10 +389,11 @@ set(libdynd_SRC
     include/dynd/array_range.hpp
     include/dynd/array_iter.hpp
     include/dynd/dim_iter.hpp
+    include/dynd/platform_definitions.hpp
     include/dynd/shortvector.hpp
     include/dynd/shape_tools.hpp
     include/dynd/string_encodings.hpp
-    include/dynd/platform_definitions.h
+    include/dynd/view.hpp
     )
 
 include_directories(

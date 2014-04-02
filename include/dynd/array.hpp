@@ -3,8 +3,8 @@
 // BSD 2-Clause License, see LICENSE.txt
 //
 
-#ifndef _DYND__NDOBJECT_HPP_
-#define _DYND__NDOBJECT_HPP_
+#ifndef _DYND__ARRAY_HPP_
+#define _DYND__ARRAY_HPP_
 
 #include <iostream> // FOR DEBUG
 #include <stdexcept>
@@ -233,6 +233,10 @@ public:
 
     inline uint32_t get_access_flags() const {
         return get_ndo()->m_flags & (immutable_access_flag | read_access_flag | write_access_flag);
+    }
+
+    inline bool is_immutable() const {
+        return (get_ndo()->m_flags & immutable_access_flag) != 0;
     }
 
     /** Returns true if the object is a scalar */
@@ -1292,4 +1296,4 @@ array combine_into_struct(size_t field_count, const std::string *field_names,
 
 }} // namespace dynd::nd
 
-#endif // _DYND__NDOBJECT_HPP_
+#endif // _DYND__ARRAY_HPP_

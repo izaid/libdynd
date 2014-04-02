@@ -10,7 +10,7 @@
 //#define ENABLE_LOGGING
 
 
-#include <dynd/platform_definitions.h>
+#include <dynd/platform_definitions.hpp>
 #if defined(DYND_OS_LINUX)
 
 #include <dynd/memblock/executable_memory_block.hpp>
@@ -43,11 +43,6 @@ static inline void* ptr_offset(void* base, std::ptrdiff_t offset_in_bytes)
 static inline size_t align_up(size_t value, size_t alignment)
 {
     return ((value + alignment - 1) / alignment) * alignment;
-}
-
-static inline size_t align_down(size_t value, size_t alignment)
-{
-    return value % alignment;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -8,7 +8,7 @@
 //#define ENABLE_LOGGING
 
 
-#include <dynd/platform_definitions.h>
+#include <dynd/platform_definitions.hpp>
 #if defined(DYND_OS_DARWIN)
 
 #include <dynd/memblock/executable_memory_block.hpp>
@@ -42,10 +42,6 @@ static inline size_t align_up(size_t value, size_t alignment)
     return ((value + alignment - 1) / alignment) * alignment;
 }
 
-static inline size_t align_down(size_t value, size_t alignment)
-{
-    return value % alignment;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace {
