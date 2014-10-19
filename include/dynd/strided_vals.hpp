@@ -53,6 +53,67 @@ struct strided_utils<1> {
         pointer += strides[0];
     }
 };
+}
+
+template <int N>
+struct fixed;
+
+template <>
+struct fixed<1> {
+    template <typename T>
+    static void add(T *res, const T *a, const T *b) {
+        res[0] = a[0] + b[0];
+    }
+
+    template <typename T>
+    static void dec(T *res) {
+        --res[0];
+    }
+
+    template <typename T>
+    static void clamp(T *x, const T *a, const T *b)
+    {
+        if (*x < *a) {
+            *x = *a;
+        } else if (*x > *b) {
+            *x = *b;
+        }
+    }
+};
+
+template <int N>
+struct fixed {
+    template <typename T>
+    static void add(T *res, const T *a, const T *b) {
+        fixed<N - 1>::add(res, a, b);
+        res[N - 1] = a[N - 1] + b[N - 1];
+    }
+
+    template <typename T>
+    static void dec(T *res) {
+        fixed<N - 1>::dec(res);
+        --res[N - 1];
+    }
+
+    template <typename T>
+    static void clamp(T *x, const T *a, const T *b)
+    {
+        fixed<N - 1>::clamp(x, a, b);
+        fixed<1>::clamp(x + N - 1, a + N - 1, b + N - 1);
+    }
+};
+
+template <int N>
+struct strided {
+    static const char *at(const char *pointer, const intptr_t *index, const intptr_t *strides) {
+        return detail::strided_utils<N>::get(pointer, index, strides);
+    }
+
+    static void set_bounds() {
+    }
+};
+
+namespace detail {
 
 template <typename T, int N>
 class strided_vals {
@@ -66,6 +127,9 @@ class strided_vals {
     } m_mask;
     intptr_t m_sizes[N];
     const start_stop_t *m_start_stop;
+
+    intptr_t m_start_index[N];
+    intptr_t m_stop_index[N];
     intptr_t m_center_index[N];
 
 public:
@@ -115,6 +179,29 @@ public:
         m_start_stop = start_stop;
     }
 
+    void set_start_index(const intptr_t *start_index) {
+        memcpy(m_start_index, start_index, N * sizeof(intptr_t));
+    }
+
+/*
+    void set_start_index(const intptr_t *index, const intptr_t *DYND_UNUSED(shape)) {
+        for (intptr_t i = 0; i < N; ++i) {
+            if (index[i] < 0) {
+                m_start_index[i] = -index[i];
+            } else {
+                m_start_index[i] = 0;
+            }
+        }
+    }
+*/
+
+    void set_stop_index(const intptr_t *stop_index) {
+        memcpy(m_stop_index, stop_index, N * sizeof(intptr_t));
+    }
+
+    void set_stop_index(const intptr_t *DYND_UNUSED(index), const intptr_t *DYND_UNUSED(shape)) {
+    }
+
     void set_mask(const char *mask) {
         m_mask.pointer = mask;
     }
@@ -130,13 +217,18 @@ public:
         return *reinterpret_cast<const T *>(detail::strided_utils<N>::get(m_data.pointer, index, m_data.strides));
     }
 
+    T &operator ()(const intptr_t *index) {
+        return *reinterpret_cast<T *>(const_cast<char *>(detail::strided_utils<N>::get(m_data.pointer, index, m_data.strides)));
+    }
+
     bool is_masked(const intptr_t *index) const {
         return m_mask.pointer == NULL
             || *reinterpret_cast<const dynd_bool *>(detail::strided_utils<N>::get(m_mask.pointer, index, m_mask.strides));
     }
 
     bool is_valid(const intptr_t *index) const {
-        return strided_utils<N>::is_valid(index, m_start_stop);
+        return m_start_stop == NULL
+            || strided_utils<N>::is_valid(index, m_start_stop);
     }
 
     class iterator {
@@ -234,6 +326,10 @@ public:
         return detail::strided_vals<T, 2>::operator ()(index);
     }
 
+    T &operator ()(const intptr_t *index) {
+        return detail::strided_vals<T, 2>::operator ()(index);
+    }
+
     const T &operator ()(intptr_t i0, intptr_t i1) const {
         const intptr_t index[2] = {i0, i1};
         return operator ()(index);
@@ -288,6 +384,32 @@ public:
         return is_valid(index);
     }
 };
+
+template <typename T, int N, bool diag = false>
+nd::strided_vals<T, N> make_nearest_vals(const char *data, const intptr_t *strides) {
+    static intptr_t shape[N] = {3};
+
+    static dynd::dynd_bool mask[3][3] = {{false, true, false}, {true, false, true}, {false, true, false}};
+
+
+    dynd::size_stride_t size_stride[N];
+    for (intptr_t i = 0; i < N; ++i) {
+        size_stride[i].dim_size = 3;
+        size_stride[i].stride = strides[i];
+    }
+
+    size_stride_t mask_size_stride[2];
+    mask_size_stride[0].dim_size = 3;
+    mask_size_stride[0].stride = 3 * sizeof(dynd_bool);
+    mask_size_stride[1].dim_size = 3;
+    mask_size_stride[1].stride = sizeof(dynd_bool);
+
+    nd::strided_vals<T, N> vals;
+    vals.set_data(data, size_stride);
+    vals.set_mask(reinterpret_cast<const char *>(mask), mask_size_stride);
+
+    return vals;
+}
 
 }} // namespace dynd::nd
 

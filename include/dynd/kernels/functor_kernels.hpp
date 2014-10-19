@@ -37,15 +37,22 @@ private:
 
 public:
     void init(const ndt::type &DYND_UNUSED(tp), const char *arrmeta, const nd::array &kwds) {
-        m_strided.set_data(NULL, reinterpret_cast<const size_stride_t *>(arrmeta),
-            reinterpret_cast<start_stop_t *>(kwds.p("start_stop").as<intptr_t>()));
+        start_stop_t *start_stop;
+        if (kwds.is_null()) {
+            start_stop = NULL;
+        } else {
+            start_stop = reinterpret_cast<start_stop_t *>(kwds.p("start_stop").as<intptr_t>());
+        }
+        m_strided.set_data(NULL, reinterpret_cast<const size_stride_t *>(arrmeta), start_stop);
 
-        ndt::type dt = kwds.get_dtype();
-        try {
-            const nd::array &mask = kwds.p("mask").f("dereference");
-            m_strided.set_mask(mask.get_readonly_originptr(), reinterpret_cast<const size_stride_t *>(mask.get_arrmeta()));
-        } catch (...) {
-            m_strided.set_mask(NULL);
+        if (!kwds.is_null()) {
+            ndt::type dt = kwds.get_dtype();
+            try {
+                const nd::array &mask = kwds.p("mask").f("dereference");
+                m_strided.set_mask(mask.get_readonly_originptr(), reinterpret_cast<const size_stride_t *>(mask.get_arrmeta()));
+            } catch (...) {
+                m_strided.set_mask(NULL);
+            }
         }
     }
 
@@ -115,7 +122,7 @@ struct functor_ck;
                                     kernel_request_t kernreq, const nd::array &kwds, \
                                     const eval::eval_context *DYND_UNUSED(ectx)) { \
             for (intptr_t i = 0; i < N; ++i) { \
-                if (src_tp[i] != af_self->get_param_type(i)) { \
+                if (!ndt::pattern_match(src_tp[i].value_type(), af_self->get_param_type(i))) { \
                     std::stringstream ss; \
                     ss << "Provided types " << ndt::make_funcproto(N, src_tp, dst_tp) \
                        << " do not match the arrfunc proto " << af_self->func_proto; \
