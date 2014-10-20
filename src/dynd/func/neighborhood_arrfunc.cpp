@@ -21,10 +21,8 @@ struct neighborhood_ck : kernels::expr_ck<neighborhood_ck<N>, N> {
     intptr_t src_stride[N];
     intptr_t count[3];
     intptr_t nh_size;
-    start_stop_t *nh_start_stop;
-
-    // local index of first in of bounds element in the neighborhood
-    // local index of first out of bounds element in the neighborhood
+    intptr_t *start_index;
+    intptr_t *stop_index;
 
     inline void single(char *dst, char **src) {
         ckernel_prefix *child = self_type::get_child_ckernel();
@@ -36,11 +34,11 @@ struct neighborhood_ck : kernels::expr_ck<neighborhood_ck<N>, N> {
             src_copy[j] += src_offset[j];
         }
 
-        nh_start_stop->start = count[0];
-        nh_start_stop->stop = nh_size; // min(nh_size, dst_size)
+        *start_index = count[0];
+        *stop_index = nh_size; // min(nh_size, dst_size)
         for (intptr_t i = 0; i < count[0]; ++i) {
             child_fn(dst, src_copy, child);
-            --(nh_start_stop->start);
+            --(*start_index);
             dst += dst_stride;
             for (intptr_t j = 0; j < N; ++j) {
                 src_copy[j] += src_stride[j];
@@ -58,7 +56,7 @@ struct neighborhood_ck : kernels::expr_ck<neighborhood_ck<N>, N> {
   //      *nh_start = 0;
 //        *nh_stop = count[2]; // 0 if count[2] > 
         for (intptr_t i = 0; i < count[2]; ++i) {
-            --(nh_start_stop->stop);
+            --(*stop_index);
             child_fn(dst, src_copy, child);
             dst += dst_stride;
             for (intptr_t j = 0; j < N; ++j) {
@@ -91,7 +89,6 @@ static intptr_t instantiate_neighborhood(
         shape = nd::array(mask.get_shape());
     }
     intptr_t ndim = shape.get_dim_size();
-
 
     nd::array offset;
     try {
@@ -134,8 +131,10 @@ static intptr_t instantiate_neighborhood(
     }
     const char *nh_src_arrmeta[1] = {nh_arrmeta.get()};
 
+    std::vector<intptr_t> ckb_offsets;
     for (intptr_t i = 0; i < ndim; ++i) {
         typedef neighborhood_ck<N> self_type;
+        ckb_offsets.push_back(ckb_offset);
         self_type *self = self_type::create(ckb, kernreq, ckb_offset);
 
         self->dst_stride = dst_shape[i].stride;
@@ -159,12 +158,31 @@ static intptr_t instantiate_neighborhood(
         self->count[1] = dst_shape[i].dim_size - self->count[0] - self->count[2];
 
         self->nh_size = shape(i).as<intptr_t>();
-        self->nh_start_stop = nh->start_stop + i;
     }
 
+    intptr_t *start_index = NULL;
+    intptr_t *stop_index = NULL;
     ckb_offset = nh_op.get()->instantiate(nh_op.get(), ckb, ckb_offset,
         nh_dst_tp, nh_dst_arrmeta, nh_src_tp, nh_src_arrmeta,
-        kernel_request_single, pack(kwds, "start_stop", reinterpret_cast<intptr_t>(nh->start_stop)), ectx);
+        kernel_request_single, pack(kwds, "start_index", &start_index, "stop_index", &stop_index), ectx);
+
+    for (intptr_t i = 0; i < ndim; ++i) {
+        typedef neighborhood_ck<N> self_type;
+        self_type *self = ckb->get_at<self_type>(ckb_offsets[i]);
+
+        if (start_index == NULL) {
+            self->start_index = NULL;
+        } else {
+            self->start_index = start_index + i;
+        }
+
+        if (stop_index == NULL) {
+            self->stop_index = NULL;
+        } else {
+            self->stop_index = stop_index + i;
+        }
+    }
+
     return ckb_offset;
 }
 

@@ -27,6 +27,10 @@ struct strided_utils {
         return strided_utils<N - 1>::is_valid(index, start_stop) && (index[N - 1] >= start_stop[N - 1].start) && (index[N - 1] < start_stop[N - 1].stop);
     }
 
+    static bool is_valid(const intptr_t *index, const intptr_t *start_index, const intptr_t *stop_index) {
+        return strided_utils<N - 1>::is_valid(index, start_index, stop_index) && (index[N - 1] >= start_index[N - 1]) && (index[N - 1] < stop_index[N - 1]);
+    }
+
     static void incr(const char *&pointer, intptr_t *index, const intptr_t *sizes, const intptr_t *strides) {
         if (++index[N - 1] != sizes[N - 1]) {
             pointer += strides[N - 1];
@@ -46,6 +50,10 @@ struct strided_utils<1> {
 
     static bool is_valid(const intptr_t *index, const start_stop_t *start_stop) {
         return (index[0] >= start_stop[0].start) && (index[0] < start_stop[0].stop);
+    }
+
+    static bool is_valid(const intptr_t *index, const intptr_t *start_index, const intptr_t *stop_index) {
+        return (index[0] >= start_index[0]) && (index[0] < stop_index[0]);
     }
 
     static void incr(const char *&pointer, intptr_t *index, const intptr_t *DYND_UNUSED(sizes), const intptr_t *strides) {
@@ -126,7 +134,6 @@ class strided_vals {
         intptr_t strides[N];
     } m_mask;
     intptr_t m_sizes[N];
-    const start_stop_t *m_start_stop;
 
     intptr_t m_start_index[N];
     intptr_t m_stop_index[N];
@@ -161,6 +168,14 @@ public:
         return m_data.strides;
     }
 
+    intptr_t *get_start_index() {
+        return m_start_index;
+    }
+
+    intptr_t *get_stop_index() {
+        return m_stop_index;
+    }
+
     const intptr_t *get_center_index() const {
         return m_center_index;
     }
@@ -169,14 +184,13 @@ public:
         m_data.pointer = data;
     }
 
-    void set_data(const char *data, const size_stride_t *size_stride, const start_stop_t *start_stop = NULL) {
+    void set_data(const char *data, const size_stride_t *size_stride) {
         m_data.pointer = data;
         for (intptr_t i = 0; i < N; ++i) {
             m_data.strides[i] = size_stride[i].stride;
             m_sizes[i] = size_stride[i].dim_size;
             m_center_index[i] = (m_sizes[i] - 1) / 2;
         }
-        m_start_stop = start_stop;
     }
 
     void set_start_index(const intptr_t *start_index) {
@@ -227,8 +241,7 @@ public:
     }
 
     bool is_valid(const intptr_t *index) const {
-        return m_start_stop == NULL
-            || strided_utils<N>::is_valid(index, m_start_stop);
+        return strided_utils<N>::is_valid(index, m_start_index, m_stop_index);
     }
 
     class iterator {
