@@ -116,9 +116,6 @@ struct strided {
     static const char *at(const char *pointer, const intptr_t *index, const intptr_t *strides) {
         return detail::strided_utils<N>::get(pointer, index, strides);
     }
-
-    static void set_bounds() {
-    }
 };
 
 namespace detail {
@@ -197,23 +194,34 @@ public:
         memcpy(m_start_index, start_index, N * sizeof(intptr_t));
     }
 
-/*
-    void set_start_index(const intptr_t *index, const intptr_t *DYND_UNUSED(shape)) {
+    void set_start_index(const intptr_t *index, const intptr_t *shape) {
         for (intptr_t i = 0; i < N; ++i) {
-            if (index[i] < 0) {
-                m_start_index[i] = -index[i];
+            intptr_t j = index[i];
+            if (j < 0) {
+                m_start_index[i] = -j;
+            } else if (j > shape[i]) {
+                m_start_index[i] = m_sizes[i];
             } else {
                 m_start_index[i] = 0;
             }
         }
     }
-*/
 
     void set_stop_index(const intptr_t *stop_index) {
         memcpy(m_stop_index, stop_index, N * sizeof(intptr_t));
     }
 
-    void set_stop_index(const intptr_t *DYND_UNUSED(index), const intptr_t *DYND_UNUSED(shape)) {
+    void set_stop_index(const intptr_t *index, const intptr_t *shape) {
+        for (intptr_t i = 0; i < N; ++i) {
+            intptr_t j = index[i] + m_sizes[i];
+            if (j < 0) {
+                m_stop_index[i] = 0;
+            } else if (j > shape[i]) {
+                m_stop_index[i] = shape[i] - index[i];
+            } else {
+                m_stop_index[i] = m_sizes[i];
+            }
+        }
     }
 
     void set_mask(const char *mask) {
