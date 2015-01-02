@@ -94,15 +94,34 @@ namespace kernels {
   };
 
   template <typename T, int N, size_t I>
-  struct arg<const nd::strided_vals<T, N> &, I> {
-    nd::strided_vals<T, N> m_vals;
+  struct arg<const nd::fixed<T, N> &, I> {
+    nd::fixed<T, N> m_vals;
 
     arg(const ndt::type &DYND_UNUSED(tp), const char *arrmeta,
         const nd::array &kwds)
     {
-      m_vals.set_data(NULL, reinterpret_cast<const size_stride_t *>(arrmeta),
-                      reinterpret_cast<start_stop_t *>(
-                          kwds.p("start_stop").as<intptr_t>()));
+      m_vals.set_data(NULL, reinterpret_cast<const size_stride_t *>(arrmeta));
+
+      if (!kwds.is_null()) {
+        std::cout << "kwds.get_type() = " << kwds.get_type() << std::endl;
+        std::cout << "kwds = " << kwds << std::endl;
+        try {
+          std::cout << "m_vals.get_start_index() = " << m_vals.get_start_index()
+                    << std::endl;
+          std::cout << "m_vals.get_stop_index() = " << m_vals.get_stop_index()
+                    << std::endl;
+          m_vals.get_start_index()[0] = -2;
+
+          intptr_t **start_index = kwds.p("start_index").as<intptr_t **>();
+          *start_index = m_vals.get_start_index();
+          *kwds.p("stop_index").as<intptr_t **>() = m_vals.get_stop_index();
+
+          std::cout << "kwds = " << kwds << std::endl;
+        }
+        catch (...) {
+          throw std::runtime_error("error");
+        }
+      }
 
       ndt::type dt = kwds.get_dtype();
       // TODO: Remove all try/catch(...) in the code
@@ -117,7 +136,7 @@ namespace kernels {
       }
     }
 
-    nd::strided_vals<T, N> &get(char *data)
+    nd::fixed<T, N> &get(char *data)
     {
       m_vals.set_data(data);
       return m_vals;
@@ -127,6 +146,12 @@ namespace kernels {
   template <typename A, typename I = make_index_sequence<A::size>>
   struct args;
 
+  template <typename T, typename U>
+  size_t offsetOf(U T::*member)
+  {
+    return (char *)&((T *)nullptr->*member) - (char *)nullptr;
+  }
+
   template <typename... A, size_t... I>
   struct args<type_sequence<A...>, index_sequence<I...>> : arg<A, I>... {
     args(const ndt::type *DYND_CONDITIONAL_UNUSED(src_tp),
@@ -135,7 +160,48 @@ namespace kernels {
         : arg<A, I>(src_tp[I], src_arrmeta[I], kwds)...
     {
     }
+
+    void get_start_index_offsets(){};
+
+    static const intptr_t *get_sizes()
+    {
+      static const intptr_t sizes[sizeof...(A)] = {sizeof(A)...};
+      return sizes;
+    }
+
+    void get_offsets() const
+    {
+      const intptr_t offsets[sizeof...(A)] = {
+          (reinterpret_cast<intptr_t>(static_cast<const arg<A, I> *>(this)) -
+           reinterpret_cast<intptr_t>(this))...};
+
+      for (size_t i = 0; i < sizeof...(A); ++i) {
+        std::cout << "offsets[" << i << "] = " << offsets[i] << std::endl;
+      }
+    }
+
+    static bool check()
+    {
+      return std::is_standard_layout<
+          args<type_sequence<A...>, index_sequence<I...>>>::value;
+    }
+
+    static void get_start_index()
+    {
+      //     std::cout << "offsetOf = " << offsetOf(&nd::fixed<int,
+      //     1>::m_start_index) << std::endl;
+      //      static const intptr_t start_indices[sizeof...(A)] =
+      //      {offsetOf(nd::fixed<int, 1>::m_start_stop...};
+    }
   };
+
+  template <typename A, size_t I, typename self_type>
+  intptr_t get_start_index(const self_type *self)
+  {
+    return reinterpret_cast<intptr_t>(self) -
+           reinterpret_cast<intptr_t>(
+               static_cast<const arg<A, I> *>(self)->m_vals.get_start_index());
+  }
 
   template <typename func_type,
             int Nsrc =
@@ -160,8 +226,7 @@ namespace kernels {
     DYND_CUDA_HOST_DEVICE T get() { return m_val; }
   };
 
-  template <typename K,
-            typename J = make_index_sequence<K::size>>
+  template <typename K, typename J = make_index_sequence<K::size>>
   struct kwds;
 
   template <>
@@ -280,7 +345,6 @@ namespace kernels {
                 const char *const *src_arrmeta, kernel_request_t kernreq,      \
                 const eval::eval_context *ectx, const nd::array &kwds);        \
                                                                                \
-  private:                                                                     \
     template <typename R, typename... A, size_t... I, typename... K,           \
               size_t... J>                                                     \
     __VA_ARGS__ typename std::enable_if<std::is_same<R, void>::value,          \
@@ -315,10 +379,23 @@ namespace kernels {
       const char *const *src_arrmeta, kernel_request_t kernreq,
       const eval::eval_context *DYND_UNUSED(ectx), const nd::array &kwds)
   {
+    args_for<func_type, Nsrc> a(src_tp, src_arrmeta, kwds);
+
     self_type::create(ckb, kernreq, ckb_offset,
-                      *af_self->get_data_as<func_type>(),
-                      args_for<func_type, Nsrc>(src_tp, src_arrmeta, kwds),
+                      *af_self->get_data_as<func_type>(), a,
                       kwds_for<func_type, Nsrc>(kwds));
+
+    std::cout << "is_standard_layout = " << is_standard_layout<self_type>::value << std::endl;
+    /*
+        const intptr_t *offsets = args_for<func_type, Nsrc>::get_offsets();
+        for (intptr_t i = 0; i < Nsrc; ++i) {
+          std::cout << offsets[i] << std::endl;
+        }
+    */
+
+    std::cout << args_for<func_type, Nsrc>::check() << std::endl;
+    std::cout << "done" << std::endl;
+
     return ckb_offset;
   }
 

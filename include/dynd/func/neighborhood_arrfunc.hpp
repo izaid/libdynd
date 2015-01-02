@@ -18,7 +18,6 @@ namespace dynd {
  *                         a single output value. Signature
  *                         '(Fixed * Fixed * NH, Fixed * Fixed * MSK) -> OUT',
  */
-nd::arrfunc make_neighborhood_arrfunc(const nd::arrfunc &neighborhood_op,
-                                      intptr_t nh_ndim);
+nd::arrfunc make_neighborhood_arrfunc(const nd::arrfunc &neighborhood_op);
 
 } // namespace dynd

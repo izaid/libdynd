@@ -965,8 +965,7 @@ namespace nd {
 
     /** Does a value-assignment from the rhs C++ scalar. */
     template <class T>
-    typename std::enable_if<is_dynd_scalar<T>::value, array_vals &>::type
-    operator=(const T &rhs)
+    typename std::enable_if<is_dynd_scalar<typename remove_all_pointers<T>::type>::value, array_vals&>::type operator=(const T& rhs)
     {
       m_arr.val_assign(ndt::make_exact_type<T>(), NULL, (const char *)&rhs);
       return *this;
@@ -1769,8 +1768,7 @@ namespace nd {
   namespace detail {
     template <class T>
     struct array_as_helper {
-      inline static typename std::enable_if<
-          is_dynd_scalar<T>::value || is_dynd_scalar_pointer<T>::value, T>::type
+      inline static typename std::enable_if<is_dynd_scalar<typename remove_all_pointers<T>::type>::value, T>::type
       as(const array &lhs, const eval::eval_context *ectx)
       {
         T result;

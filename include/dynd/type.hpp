@@ -70,12 +70,12 @@ char *iterdata_broadcasting_terminator_incr(iterdata_common *iterdata, intptr_t 
 char *iterdata_broadcasting_terminator_adv(iterdata_common *iterdata, intptr_t level, intptr_t i);
 char *iterdata_broadcasting_terminator_reset(iterdata_common *iterdata, char *data, intptr_t level);
 
-// Forward declaration of nd::array and nd::strided_vals
+// Forward declaration of nd::array and nd::fixed
 namespace nd {
     class array;
 
     template <typename T, int N>
-    class strided_vals;
+    class fixed;
 } // namespace nd
 
 namespace ndt {
@@ -852,7 +852,7 @@ namespace detail {
   };
 
   template <typename T, int N>
-  struct type_from<nd::strided_vals<T, N> > {
+  struct type_from<nd::fixed<T, N> > {
     static type make() { return make_fixed_dimsym(type_from<T>::make(), N); }
   };
 

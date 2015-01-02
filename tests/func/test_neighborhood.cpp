@@ -21,8 +21,11 @@ using namespace std;
 using namespace dynd;
 
 template <int N>
-int sum(const nd::strided_vals<int, N> &nh) {
-    typedef nd::strided_vals<int, N> nh_type;
+int sum(const nd::fixed<int, N> &nh) {
+    typedef nd::fixed<int, N> nh_type;
+
+    std::cout << "nh.get_start_index() = " << nh.get_start_index() << std::endl;
+    std::cout << "nh.get_stop_index() = " << nh.get_stop_index() << std::endl;
 
     int res = 0;
     for (typename nh_type::iterator it = nh.begin(); it != nh.end(); ++it) {
@@ -33,7 +36,7 @@ int sum(const nd::strided_vals<int, N> &nh) {
 }
 
 TEST(Neighborhood, Sum1D) {
-    nd::arrfunc af = make_neighborhood_arrfunc(nd::apply::make(sum<1>), 1);
+    nd::arrfunc af = make_neighborhood_arrfunc(nd::apply::make(sum<1>));
     nd::array a;
 
     a = parse_json("4 * int",
@@ -74,7 +77,7 @@ TEST(Neighborhood, Sum1D) {
 }
 
 TEST(Neighborhood, Sum2D) {
-    nd::arrfunc af = make_neighborhood_arrfunc(nd::apply::make(sum<2>), 2);
+    nd::arrfunc af = make_neighborhood_arrfunc(nd::apply::make(sum<2>));
     nd::array a;
 
     a = parse_json("4 * 4 * int",
@@ -133,7 +136,7 @@ TEST(Neighborhood, Sum2D) {
 }
 
 TEST(Neighborhood, Sum3D) {
-    nd::arrfunc af = make_neighborhood_arrfunc(nd::apply::make(sum<3>), 3);
+    nd::arrfunc af = make_neighborhood_arrfunc(nd::apply::make(sum<3>));
     nd::array a;
 
     a = parse_json("4 * 4 * 4 * int",

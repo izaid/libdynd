@@ -48,8 +48,12 @@ void pointer_type::print_data(std::ostream &o, const char *arrmeta,
       reinterpret_cast<const pointer_type_arrmeta *>(arrmeta);
   const char *target_data =
       *reinterpret_cast<const char *const *>(data) + md->offset;
-  m_target_tp.print_data(o, arrmeta + sizeof(pointer_type_arrmeta),
-                         target_data);
+  if (target_data == NULL) {
+    o << "NULL";
+  } else {
+    m_target_tp.print_data(o, arrmeta + sizeof(pointer_type_arrmeta),
+                           target_data);
+  }
 }
 
 void pointer_type::print_type(std::ostream &o) const

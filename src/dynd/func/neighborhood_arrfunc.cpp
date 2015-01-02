@@ -22,7 +22,9 @@ struct neighborhood_ck
   intptr_t src_stride[N];
   intptr_t count[3];
   intptr_t nh_size;
-  start_stop_t *nh_start_stop;
+
+  intptr_t *start_index;
+  intptr_t *stop_index;
 
   // local index of first in of bounds element in the neighborhood
   // local index of first out of bounds element in the neighborhood
@@ -38,11 +40,11 @@ struct neighborhood_ck
       src_copy[j] += src_offset[j];
     }
 
-    nh_start_stop->start = count[0];
-    nh_start_stop->stop = nh_size; // min(nh_size, dst_size)
+    *start_index = count[0];
+    *stop_index = nh_size; // min(nh_size, dst_size)
     for (intptr_t i = 0; i < count[0]; ++i) {
       child_fn(dst, src_copy, child);
-      --(nh_start_stop->start);
+      --(*start_index);
       dst += dst_stride;
       for (intptr_t j = 0; j < N; ++j) {
         src_copy[j] += src_stride[j];
@@ -60,7 +62,7 @@ struct neighborhood_ck
     //      *nh_start = 0;
     //        *nh_stop = count[2]; // 0 if count[2] >
     for (intptr_t i = 0; i < count[2]; ++i) {
-      --(nh_start_stop->stop);
+      --(*stop_index);
       child_fn(dst, src_copy, child);
       dst += dst_stride;
       for (intptr_t j = 0; j < N; ++j) {
@@ -72,7 +74,6 @@ struct neighborhood_ck
 
 struct neighborhood {
   nd::arrfunc op;
-  start_stop_t *start_stop;
 };
 
 template <int N>
@@ -138,8 +139,10 @@ static intptr_t instantiate_neighborhood(
   }
   const char *nh_src_arrmeta[1] = {nh_arrmeta.get()};
 
+  std::vector<intptr_t> ckb_offsets;
   for (intptr_t i = 0; i < ndim; ++i) {
     typedef neighborhood_ck<N> self_type;
+    ckb_offsets.push_back(ckb_offset);
     self_type *self = self_type::create(ckb, kernreq, ckb_offset);
 
     self->dst_stride = dst_shape[i].stride;
@@ -165,54 +168,81 @@ static intptr_t instantiate_neighborhood(
     self->count[1] = dst_shape[i].dim_size - self->count[0] - self->count[2];
 
     self->nh_size = shape(i).as<intptr_t>();
-    self->nh_start_stop = nh->start_stop + i;
   }
+
+  intptr_t *start_index = NULL;
+  intptr_t *stop_index = NULL;
 
   ckb_offset = nh_op.get()->instantiate(
       nh_op.get(), nh_op.get_type(), ckb, ckb_offset, nh_dst_tp, nh_dst_arrmeta,
       nh_src_tp, nh_src_arrmeta, kernel_request_single, ectx,
-      struct_concat(kwds, pack("start_stop",
-                               reinterpret_cast<intptr_t>(nh->start_stop))));
+      struct_concat(
+          kwds, pack("start_index", &start_index, "stop_index", &stop_index)));
+
+  std::cout << "start_index = " << start_index << std::endl;
+  std::cout << "stop_index = " << stop_index << std::endl;
+
+  std::cout << "start_index[0] = " << start_index[0] << std::endl;
+
+  for (intptr_t i = 0; i < ndim; ++i) {
+    typedef neighborhood_ck<N> self_type;
+    self_type *self = reinterpret_cast<ckernel_builder<kernel_request_host> *>(ckb)->get_at<self_type>(ckb_offsets[i]);
+
+    if (start_index == NULL) {
+      self->start_index = NULL;
+    } else {
+      self->start_index = start_index + i;
+      std::cout << "self->start_index = " << self->start_index << std::endl;
+      std::cout << "self->start_index[0] = " << self->start_index[0] << std::endl;
+    }
+
+    if (stop_index == NULL) {
+      self->stop_index = NULL;
+    } else {
+      self->stop_index = stop_index + i;
+      std::cout << "self->stop_index = " << self->stop_index << std::endl;
+    }
+  }
+
 
   return ckb_offset;
 }
 
-static void resolve_neighborhood_option_values(const arrfunc_type_data *DYND_UNUSED(self),
-                                               const arrfunc_type *DYND_UNUSED(self_tp),
-                                               intptr_t DYND_UNUSED(nsrc),
-                                               const ndt::type *DYND_UNUSED(src_tp),
-                                               nd::array &DYND_UNUSED(kwds))
+static void resolve_neighborhood_option_values(
+    const arrfunc_type_data *DYND_UNUSED(self),
+    const arrfunc_type *DYND_UNUSED(self_tp), intptr_t DYND_UNUSED(nsrc),
+    const ndt::type *DYND_UNUSED(src_tp), nd::array &DYND_UNUSED(kwds))
 {
 }
 
 static int resolve_neighborhood_dst_type(
     const arrfunc_type_data *DYND_UNUSED(self), const arrfunc_type *self_tp,
-    intptr_t , const ndt::type *src_tp, int DYND_UNUSED(throw_on_error),
+    intptr_t, const ndt::type *src_tp, int DYND_UNUSED(throw_on_error),
     ndt::type &out_dst_tp, const nd::array &DYND_UNUSED(kwds))
 {
   // TODO: Should be able to express the match/subsitution without special code
 
   // This is basically resolve() from arrfunc.hpp
-/*
-  if (nsrc != af_tp->get_npos()) {
-    std::stringstream ss;
-    ss << "arrfunc expected " << af_tp->get_npos()
-       << " parameters, but received " << nsrc;
-    throw std::invalid_argument(ss.str());
-  }
-  const ndt::type *param_types = af_tp->get_pos_types_raw();
-  std::map<nd::string, ndt::type> typevars;
-  for (intptr_t i = 0; i != nsrc; ++i) {
-    if (!ndt::pattern_match(src_tp[i].value_type(), param_types[i], typevars)) {
+  /*
+    if (nsrc != af_tp->get_npos()) {
       std::stringstream ss;
-      ss << "parameter " << (i + 1) << " to arrfunc does not match, ";
-      ss << "expected " << param_types[i] << ", received " << src_tp[i];
+      ss << "arrfunc expected " << af_tp->get_npos()
+         << " parameters, but received " << nsrc;
       throw std::invalid_argument(ss.str());
     }
-  }
-*/
-//  out_dst_tp = ndt::substitute(af_tp->get_return_type(), typevars, false);
-
+    const ndt::type *param_types = af_tp->get_pos_types_raw();
+    std::map<nd::string, ndt::type> typevars;
+    for (intptr_t i = 0; i != nsrc; ++i) {
+      if (!ndt::pattern_match(src_tp[i].value_type(), param_types[i], typevars))
+    {
+        std::stringstream ss;
+        ss << "parameter " << (i + 1) << " to arrfunc does not match, ";
+        ss << "expected " << param_types[i] << ", received " << src_tp[i];
+        throw std::invalid_argument(ss.str());
+      }
+    }
+  */
+  //  out_dst_tp = ndt::substitute(af_tp->get_return_type(), typevars, false);
 
   out_dst_tp = self_tp->get_return_type();
 
@@ -228,29 +258,41 @@ static int resolve_neighborhood_dst_type(
 static void free_neighborhood(arrfunc_type_data *self_af)
 {
   neighborhood *nh = *self_af->get_data_as<neighborhood *>();
-  free(nh->start_stop);
   delete nh;
 }
 
-nd::arrfunc dynd::make_neighborhood_arrfunc(const nd::arrfunc &neighborhood_op,
-                                            intptr_t nh_ndim)
+ndt::type make_lifted_type(const arrfunc_type *child_tp, intptr_t &ndim_max)
 {
-  const arrfunc_type *funcproto_tp =
-      neighborhood_op.get_array_type().extended<arrfunc_type>();
+
+  ndim_max = -1;
+  for (intptr_t i = 0; i < child_tp->get_npos(); ++i) {
+    intptr_t ndim = child_tp->get_pos_type(i).get_ndim();
+    if (ndim > ndim_max) {
+      ndim_max = ndim;
+    }
+  }
 
   nd::array arg_tp = nd::empty(3, ndt::make_type());
-  arg_tp(0).vals() = ndt::type("?" + std::to_string(nh_ndim) + " * int");
-  arg_tp(1).vals() = ndt::type("?" + std::to_string(nh_ndim) + " * int");
-  arg_tp(2).vals() = ndt::type("?Fixed**" + std::to_string(nh_ndim) + " * bool");
+  arg_tp(0).vals() = ndt::type("?N * int");
+  arg_tp(1).vals() = ndt::type("?N * int");
+  arg_tp(2).vals() = ndt::type("?Fixed**N * bool");
   std::vector<std::string> arg_names;
   arg_names.push_back("shape");
   arg_names.push_back("offset");
   arg_names.push_back("mask");
-  ndt::type ret_tp = funcproto_tp->get_pos_type(0)
-                         .with_replaced_dtype(funcproto_tp->get_return_type());
-  ndt::type self_tp =
-      ndt::make_arrfunc(funcproto_tp->get_pos_tuple(),
-                        ndt::make_struct(arg_names, arg_tp), ret_tp);
+  ndt::type ret_tp = child_tp->get_pos_type(0)
+                         .with_replaced_dtype(child_tp->get_return_type());
+  ndt::type self_tp = ndt::make_arrfunc(
+      child_tp->get_pos_tuple(), ndt::make_struct(arg_names, arg_tp), ret_tp);
+
+  return self_tp;
+}
+
+nd::arrfunc dynd::make_neighborhood_arrfunc(const nd::arrfunc &neighborhood_op)
+{
+  intptr_t nh_ndim;
+  ndt::type self_tp = make_lifted_type(
+      neighborhood_op.get_array_type().extended<arrfunc_type>(), nh_ndim);
 
   std::ostringstream oss;
   oss << "Fixed**" << nh_ndim;
@@ -273,7 +315,6 @@ nd::arrfunc dynd::make_neighborhood_arrfunc(const nd::arrfunc &neighborhood_op,
   neighborhood **nh = out_af->get_data_as<neighborhood *>();
   *nh = new neighborhood;
   (*nh)->op = neighborhood_op;
-  (*nh)->start_stop = (start_stop_t *)malloc(nh_ndim * sizeof(start_stop_t));
   out_af->instantiate = &instantiate_neighborhood<1>;
   out_af->resolve_option_values = &resolve_neighborhood_option_values;
   out_af->resolve_dst_type = &resolve_neighborhood_dst_type;
