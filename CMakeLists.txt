@@ -73,6 +73,10 @@ else()
     set(DYND_CUDA_01 0)
 endif()
 
+#include(LLVMConfig)
+#llvm_map_components_to_libnames(OUT)
+#MESSAGE("${OUT}")
+
 list(APPEND CMAKE_MODULE_PATH
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
@@ -85,6 +89,153 @@ include_directories(thirdparty/datetime/include)
 
 set(DYND_LINK_LIBS cephes datetime)
 
+include_directories(/opt/local/libexec/llvm-3.5/include)
+link_directories(/opt/local/libexec/llvm-3.5/lib)
+
+#set(DYND_LINK_LIBS ${DYND_LINK_LIBS} clangFrontend clangSerialization clangDriver
+#clangTooling clangParse clangSema
+#clangAnalysis clangRewriteFrontend clangRewrite
+#clangEdit clangAST clangLex clangBasic)
+#set(DYND_LINK_LIBS ${DYND_LINK_LIBS} LLVMLTO LLVMObjCARCOpts LLVMLinker LLVMipo LLVMVectorize
+#LLVMBitWriter LLVMIRReader LLVMAsmParser LLVMR600CodeGen LLVMR600Desc LLVMR600Info LLVMR600AsmPrinter
+#LLVMSystemZDisassembler LLVMSystemZCodeGen LLVMSystemZAsmParser LLVMSystemZDesc LLVMSystemZInfo
+#LLVMSystemZAsmPrinter LLVMHexagonCodeGen LLVMHexagonAsmPrinter LLVMHexagonDesc LLVMHexagonInfo
+#LLVMNVPTXCodeGen LLVMNVPTXDesc LLVMNVPTXInfo LLVMNVPTXAsmPrinter LLVMCppBackendCodeGen
+#LLVMCppBackendInfo LLVMMSP430CodeGen LLVMMSP430Desc LLVMMSP430Info LLVMMSP430AsmPrinter
+#LLVMXCoreDisassembler LLVMXCoreCodeGen LLVMXCoreDesc LLVMXCoreInfo LLVMXCoreAsmPrinter
+#LLVMMipsDisassembler LLVMMipsCodeGen LLVMMipsAsmParser LLVMMipsDesc LLVMMipsInfo
+#LLVMMipsAsmPrinter LLVMAArch64Disassembler LLVMAArch64CodeGen LLVMAArch64AsmParser
+#LLVMAArch64Desc LLVMAArch64Info LLVMAArch64AsmPrinter LLVMAArch64Utils
+#LLVMARMDisassembler LLVMARMCodeGen LLVMARMAsmParser LLVMARMDesc LLVMARMInfo
+#LLVMARMAsmPrinter LLVMPowerPCDisassembler LLVMPowerPCCodeGen LLVMPowerPCAsmParser
+#LLVMPowerPCDesc LLVMPowerPCInfo LLVMPowerPCAsmPrinter LLVMSparcDisassembler
+#LLVMSparcCodeGen LLVMSparcAsmParser LLVMSparcDesc LLVMSparcInfo LLVMSparcAsmPrinter
+#LLVMTableGen LLVMDebugInfo LLVMOption LLVMX86Disassembler LLVMX86AsmParser LLVMX86CodeGen
+#LLVMSelectionDAG LLVMAsmPrinter LLVMX86Desc LLVMX86Info LLVMX86AsmPrinter LLVMX86Utils
+#LLVMJIT LLVMLineEditor LLVMMCAnalysis LLVMMCDisassembler LLVMInstrumentation LLVMInterpreter
+#LLVMCodeGen LLVMScalarOpts LLVMInstCombine LLVMTransformUtils LLVMipa LLVMAnalysis
+#LLVMProfileData LLVMMCJIT LLVMTarget LLVMRuntimeDyld LLVMObject LLVMMCParser
+#LLVMBitReader LLVMExecutionEngine LLVMMC LLVMCore LLVMSupport)
+
+set(DYND_LINK_LIBS ${DYND_LINK_LIBS} z pthread ffi edit curses m    clangFrontend
+    clangSerialization
+    clangDriver
+    clangTooling
+    clangCodeGen
+    clangParse
+    clangSema
+    clangAnalysis
+    clangRewriteFrontend
+    clangRewrite
+    clangEdit
+    clangAST
+    clangASTMatchers
+    clangLex
+    clangBasic
+    LLVMLTO
+    LLVMObjCARCOpts
+    LLVMLinker
+    LLVMipo
+    LLVMVectorize
+    LLVMBitWriter
+    LLVMIRReader
+    LLVMAsmParser
+    LLVMR600CodeGen
+    LLVMR600Desc
+    LLVMR600Info
+    LLVMR600AsmPrinter
+    LLVMSystemZDisassembler
+    LLVMSystemZCodeGen
+    LLVMSystemZAsmParser
+    LLVMSystemZDesc
+    LLVMSystemZInfo
+    LLVMSystemZAsmPrinter
+    LLVMHexagonCodeGen
+    LLVMHexagonAsmPrinter
+    LLVMHexagonDesc
+    LLVMHexagonInfo
+    LLVMNVPTXCodeGen
+    LLVMNVPTXDesc
+    LLVMNVPTXInfo
+    LLVMNVPTXAsmPrinter
+    LLVMCppBackendCodeGen
+    LLVMCppBackendInfo
+    LLVMMSP430CodeGen
+    LLVMMSP430Desc
+    LLVMMSP430Info
+    LLVMMSP430AsmPrinter
+    LLVMXCoreDisassembler
+    LLVMXCoreCodeGen
+    LLVMXCoreDesc
+    LLVMXCoreInfo
+    LLVMXCoreAsmPrinter
+    LLVMMipsDisassembler
+    LLVMMipsCodeGen
+    LLVMMipsAsmParser
+    LLVMMipsDesc
+    LLVMMipsInfo
+    LLVMMipsAsmPrinter
+    LLVMAArch64Disassembler
+    LLVMAArch64CodeGen
+    LLVMAArch64AsmParser
+    LLVMAArch64Desc
+    LLVMAArch64Info
+    LLVMAArch64AsmPrinter
+    LLVMAArch64Utils
+    LLVMARMDisassembler
+    LLVMARMCodeGen
+    LLVMARMAsmParser
+    LLVMARMDesc
+    LLVMARMInfo
+    LLVMARMAsmPrinter
+    LLVMPowerPCDisassembler
+    LLVMPowerPCCodeGen
+    LLVMPowerPCAsmParser
+    LLVMPowerPCDesc
+    LLVMPowerPCInfo
+    LLVMPowerPCAsmPrinter
+    LLVMSparcDisassembler
+    LLVMSparcCodeGen
+    LLVMSparcAsmParser
+    LLVMSparcDesc
+    LLVMSparcInfo
+    LLVMSparcAsmPrinter
+    LLVMTableGen
+    LLVMDebugInfo
+    LLVMOption
+    LLVMX86Disassembler
+    LLVMX86AsmParser
+    LLVMX86CodeGen
+    LLVMSelectionDAG
+    LLVMAsmPrinter
+    LLVMX86Desc
+    LLVMX86Info
+    LLVMX86AsmPrinter
+    LLVMX86Utils
+    LLVMJIT
+    LLVMLineEditor
+    LLVMMCAnalysis
+    LLVMMCDisassembler
+    LLVMInstrumentation
+    LLVMInterpreter
+    LLVMCodeGen
+    LLVMScalarOpts
+    LLVMInstCombine
+    LLVMTransformUtils
+    LLVMipa
+    LLVMAnalysis
+    LLVMProfileData
+    LLVMMCJIT
+    LLVMTarget
+    LLVMRuntimeDyld
+    LLVMObject
+    LLVMMCParser
+    LLVMBitReader
+    LLVMExecutionEngine
+    LLVMMC
+    LLVMCore
+    LLVMSupport)
+
 if(WIN32)
     # -WX: Treat warnings as errors
     # -bigobj: Allow lots of symbols (assignment_kernels.cpp and assignment_kernels.cu need this flag)
@@ -96,7 +247,8 @@ if(WIN32)
         set(DYND_BUILD_BENCHMARKS OFF)
     endif()
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++11 -fomit-frame-pointer -fstrict-aliasing -Wall -Wextra -Werror -Wno-missing-field-initializers -fPIC")
+    # Delete -Wno-unused
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++11 -fomit-frame-pointer -fstrict-aliasing -Wall -Wextra -Werror -Wno-missing-field-initializers -fPIC -Wno-unused-parameter")
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         if ("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.7)
             message(FATAL_ERROR "Only GCC 4.7 and later are supported by LibDyND. Found version ${CMAKE_CXX_COMPILER_VERSION}.")

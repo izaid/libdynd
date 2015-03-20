@@ -66,6 +66,7 @@ set(tests_SRC
     func/test_apply.cpp
     func/test_arithmetic.cpp
     func/test_arrfunc.cpp
+    func/test_ast.cpp
     func/test_callable.cpp
     func/test_chain_arrfunc.cpp
     func/test_elwise.cpp
