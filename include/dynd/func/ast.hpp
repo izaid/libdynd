@@ -19,6 +19,8 @@
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/Rewrite/Core/Rewriter.h"
+#include "clang/Tooling/Refactoring.h"
+#include "clang/Tooling/RefactoringCallbacks.h"
 
 using namespace clang;
 using namespace clang::ast_matchers;
@@ -66,23 +68,67 @@ public:
   }
 };
 
-struct IfStmtHandler : public MatchFinder::MatchCallback {
+struct CallArrfuncHandler : public tooling::RefactoringCallback {
+  virtual void run(const MatchFinder::MatchResult &DYND_UNUSED(result))
+  {
+  }
+};
+
+struct IfStmtHandler : public tooling::RefactoringCallback {
+  //  Replacements *Replace;
+
   virtual void run(const MatchFinder::MatchResult &result)
   {
     if (clang::FunctionDecl const *nd =
             result.Nodes.getNodeAs<clang::FunctionDecl>("func")) {
       SourceManager &srcMgr = result.Context->getSourceManager();
-      Rewriter Rewrite;
       Rewrite.setSourceMgr(srcMgr, result.Context->getLangOpts());
 
       if (srcMgr.getFilename(nd->getLocation()).str() != "input.cc") {
         return;
       }
 
+//      Stmt *body = nd->getBody();
+
       std::cout << "here" << std::endl;
       nd->dump();
-      Rewrite.InsertText(nd->getLocStart(), "// the 'if' part\n", true, true);
 
+/*
+      std::ostringstream oss;
+      oss << "struct _ck {\n";
+      oss << "void single(char *";
+      if (false) {
+        oss << "DYND_UNUSED(dst)";
+      } else {
+        oss << "dst";
+      }
+      oss << ", char *const *src) {\n";
+      oss << "}\n";
+      oss << "};";
+      std::cout << oss.str() << std::endl;
+*/
+
+      //     for (FunctionDecl::param_iterator) {
+
+      //   }
+
+      //      Rewrite.InsertText(nd->getLocStart(), "struct func_ck { void
+      //      single(char *dst) {} };", true, true);
+
+      /*
+            Replacement Rep(*(result.SourceManager), nd->getLocStart(), 0,
+                            "struct func_ck { }; ");
+            Replace.insert(Rep);
+
+            for (auto &r : getReplacements()) {
+              r.apply(Rewrite);
+            }
+
+            const RewriteBuffer *RewriteBuf =
+                Rewrite.getRewriteBufferFor(srcMgr.getMainFileID());
+            std::cout << std::string(RewriteBuf->begin(), RewriteBuf->end())
+                      << std::endl;
+      */
     }
 
     //    const FunctionDecl *var =
@@ -94,6 +140,8 @@ struct IfStmtHandler : public MatchFinder::MatchCallback {
     //    const VarDecl *lhs = Result.Nodes.getNodeAs<VarDecl>("lhs");
     //  lhs->dump(); // YAY found it!!
   }
+
+  Rewriter Rewrite;
 };
 
 namespace dynd {
@@ -125,10 +173,9 @@ namespace nd {
            "-I/opt/local/libexec/llvm-3.5/include/c++/v1",
            "-I/opt/local/libexec/llvm-3.5/lib/clang/3.5/include"});
 
-
-//    const RewriteBuffer *RewriteBuf =
-  //      TheRewriter.getRewriteBufferFor(SourceMgr.getMainFileID());
-//    llvm::outs() << string(RewriteBuf->begin(), RewriteBuf->end());
+      //    const RewriteBuffer *RewriteBuf =
+      //      TheRewriter.getRewriteBufferFor(SourceMgr.getMainFileID());
+      //    llvm::outs() << string(RewriteBuf->begin(), RewriteBuf->end());
 
       //  MyASTConsumer mycons;
       // mycons.HandleTranslationUnit(unit->getASTContext());

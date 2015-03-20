@@ -21,8 +21,7 @@ TEST(ArrFunc, AST)
 {
   nd::functional::parse("#include <dynd/func/arithmetic.hpp> \n"
                         "using namespace dynd;"
-                        "int func() { nd::add(5, 10); return "
-                        "0; }");
+                        "nd::array func(nd::array a, nd::array b) { return nd::add(a, b); }");
 
   std::exit(-1);
 }
