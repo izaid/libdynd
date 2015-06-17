@@ -62,6 +62,10 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
 ################################################
 endif()
 
+find_package(LLVM REQUIRED CONFIG)
+add_definitions(${LLVM_DEFINITIONS})
+include_directories(${LLVM_INCLUDE_DIRS})
+
 if(DYND_CUDA)
     set(DYND_CUDA_01 1)
 
@@ -317,6 +321,7 @@ set(libdynd_SRC
     src/dynd/func/rolling.cpp
     src/dynd/func/take.cpp
     src/dynd/func/take_by_pointer.cpp
+    src/dynd/func/transform.cpp
     include/dynd/func/arithmetic.hpp
     include/dynd/func/arrfunc.hpp
     include/dynd/func/arrfunc_registry.hpp
@@ -342,6 +347,7 @@ set(libdynd_SRC
     include/dynd/func/rolling.hpp
     include/dynd/func/take.hpp
     include/dynd/func/take_by_pointer.hpp
+    include/dynd/func/transform.hpp
     # Iter
     src/dynd/iter/string_iter.cpp
     include/dynd/iter/string_iter.hpp
@@ -557,6 +563,8 @@ source_group("Internal Headers" REGULAR_EXPRESSION "src/dynd/.*hpp")
 
 #set_source_files_properties(include/dynd/kernels/compare_kernels.hpp PROPERTIES COMPILE_FLAGS -Wno-sign-compare)
 #set_source_files_properties(src/dynd/func/comparison.cpp PROPERTIES COMPILE_FLAGS -Wno-sign-compare)
+
+set_source_files_properties(src/dynd/func/transform.cpp PROPERTIES COMPILE_FLAGS -Wno-unused-parameter)
 
 if (DYND_CUDA)
     # Replace some source files with their CUDA versions
