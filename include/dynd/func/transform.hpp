@@ -11,7 +11,7 @@ namespace dynd {
 namespace nd {
   namespace functional {
 
-    void transform();
+    void transform(const std::string &source);
 
   } // namespace dynd::nd::functional
 } // namespace dynd::nd

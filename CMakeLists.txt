@@ -65,6 +65,9 @@ endif()
 find_package(LLVM REQUIRED CONFIG)
 add_definitions(${LLVM_DEFINITIONS})
 include_directories(${LLVM_INCLUDE_DIRS})
+link_directories(${LLVM_INSTALL_PREFIX}/lib)
+
+message(${LLVM_INSTALL_PREFIX})
 
 if(DYND_CUDA)
     set(DYND_CUDA_01 1)
@@ -87,7 +90,27 @@ add_subdirectory(thirdparty/cephes)
 add_subdirectory(thirdparty/datetime)
 include_directories(thirdparty/datetime/include)
 
-set(DYND_LINK_LIBS cephes datetime)
+llvm_map_components_to_libnames(LLVM_LINK_LIBS core option target bitreader mcanalysis debuginfo support profiledata codegen)
+message("${LLVM_LINK_LIBS}")
+
+set(CLANG_LINK_LIBS ${CLANG_LINK_LIBS} z pthread ffi edit curses m  clangFrontend
+    clangSerialization
+    clangDriver
+    clangTooling
+    clangCodeGen
+    clangParse
+    clangSema
+    clangAnalysis
+    clangRewriteFrontend
+    clangRewrite
+    clangEdit
+    clangAST
+    clangASTMatchers
+    clangLex
+    clangBasic)
+
+
+set(DYND_LINK_LIBS cephes datetime ${CLANG_LINK_LIBS} ${LLVM_LINK_LIBS})
 
 if(WIN32)
     set(DYND_BUILD_BENCHMARKS OFF)

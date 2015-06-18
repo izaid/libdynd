@@ -16,6 +16,6 @@
 using namespace std;
 using namespace dynd;
 
-TEST(LibTooling, Simple) {
-
+TEST(Func, Transform) {
+    nd::functional::transform("class X {};");
 }
