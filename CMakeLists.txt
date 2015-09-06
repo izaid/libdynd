@@ -85,7 +85,8 @@ add_subdirectory(thirdparty/cephes)
 add_subdirectory(thirdparty/datetime)
 include_directories(thirdparty/datetime/include)
 
-llvm_map_components_to_libnames(LLVM_LINK_LIBS core option target bitreader debuginfo support profiledata codegen)
+llvm_map_components_to_libnames(LLVM_LINK_LIBS core option target bitreader debuginfo support profiledata codegen support irreader linker instrumentation objcarcopts lto)
+message(${LLVM_LINK_LIBS})
 
 set(CLANG_LINK_LIBS ${CLANG_LINK_LIBS} z pthread ffi edit curses m  clangFrontend
     clangSerialization
@@ -96,12 +97,13 @@ set(CLANG_LINK_LIBS ${CLANG_LINK_LIBS} z pthread ffi edit curses m  clangFronten
     clangSema
     clangAnalysis
     clangRewriteFrontend
-#    clangRewrite
+    clangRewrite
     clangEdit
     clangAST
     clangASTMatchers
     clangLex
-    clangBasic)
+    clangBasic
+    clang)
 
 set(DYND_LINK_LIBS cephes datetime ${CLANG_LINK_LIBS} ${LLVM_LINK_LIBS})
 

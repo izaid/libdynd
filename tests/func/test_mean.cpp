@@ -35,41 +35,46 @@ TEST(Mean, 2D)
 
 #endif
 
-/*
 #include <clang/CodeGen/CodeGenAction.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/CompilerInvocation.h>
-#include <clang/Frontend/DiagnosticOptions.h>
+//#include <clang/Frontend/DiagnosticOptions.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
-#include <llvm/ADT/OwningPtr.h>
-#include <llvm/Module.h>
-*/
-
+//#include <llvm/ADT/OwningPtr.h>
 #include <llvm/IR/Module.h>
-#include <clang/Frontend/CompilerInstance.h>
-
-struct my_kernel : nd::base_kernel<my_kernel> {
-  static std::string file()
-  {
-    return __FILE__;
-  }
-
-  void single(char *DYND_UNUSED(dst), char *const *DYND_UNUSED(src))
-  {
-  }
-
-  void strided(char *DYND_UNUSED(dst), intptr_t DYND_UNUSED(dst_stride), char *const *DYND_UNUSED(src),
-               const intptr_t *DYND_UNUSED(src_stride), size_t DYND_UNUSED(count))
-  {
-  }
-};
 
 TEST(Kernel, Unnamed)
 {
-  clang::CompilerInstance Clang;
+  // Path to the C file
+  string inputFile = "/home/irwin/git/libdynd/tests/func/test.c";
 
-  nd::callable::make<my_kernel>(ndt::type("() -> void"), 0);
+  clang::IntrusiveRefCntPtr<clang::DiagnosticOptions> DiagOpts = new clang::DiagnosticOptions();
+  clang::TextDiagnosticPrinter *DiagClient = new clang::TextDiagnosticPrinter(llvm::errs(), &*DiagOpts);
+
+  clang::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagID(new clang::DiagnosticIDs());
+  clang::DiagnosticsEngine Diags(DiagID, &*DiagOpts, DiagClient);
+
+  const char *args[] = {inputFile.c_str()};
+  int nargs = sizeof(args) / sizeof(args[0]);
+  std::unique_ptr<clang::CompilerInvocation> CI(new clang::CompilerInvocation);
+  clang::CompilerInvocation::CreateFromArgs(*CI, args, args + nargs, Diags);
+//  CI->setLangDefaults(clang::IK_CXX, clang::LangStandard::lang_unspecified);
+
+  clang::CompilerInstance Clang;
+  Clang.getLangOpts().CPlusPlus = 1;
+  Clang.setInvocation(CI.release());
+
+  Clang.createDiagnostics();
+
+  std::unique_ptr<clang::CodeGenAction> Act(new clang::EmitLLVMOnlyAction());
+  Clang.ExecuteAction(*Act);
+
+  std::unique_ptr<llvm::Module> module = Act->takeModule();
+  llvm::Function *func = module->getFunction("func");
+
+  func->dump();
+  //  func->print(llvm::cout);
 
   std::exit(-1);
 }
