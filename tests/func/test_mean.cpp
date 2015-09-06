@@ -35,6 +35,20 @@ TEST(Mean, 2D)
 
 #endif
 
+/*
+#include <clang/CodeGen/CodeGenAction.h>
+#include <clang/Frontend/CompilerInstance.h>
+#include <clang/Frontend/CompilerInvocation.h>
+#include <clang/Frontend/DiagnosticOptions.h>
+#include <clang/Frontend/TextDiagnosticPrinter.h>
+#include <llvm/ADT/IntrusiveRefCntPtr.h>
+#include <llvm/ADT/OwningPtr.h>
+#include <llvm/Module.h>
+*/
+
+#include <llvm/IR/Module.h>
+#include <clang/Frontend/CompilerInstance.h>
+
 struct my_kernel : nd::base_kernel<my_kernel> {
   static std::string file()
   {
