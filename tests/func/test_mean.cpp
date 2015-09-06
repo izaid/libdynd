@@ -34,3 +34,28 @@ TEST(Mean, 2D)
 }
 
 #endif
+
+struct my_kernel : nd::base_kernel<my_kernel> {
+  static std::string file()
+  {
+    return __FILE__;
+  }
+
+  void single(char *DYND_UNUSED(dst), char *const *DYND_UNUSED(src))
+  {
+  }
+
+  void strided(char *DYND_UNUSED(dst), intptr_t DYND_UNUSED(dst_stride), char *const *DYND_UNUSED(src),
+               const intptr_t *DYND_UNUSED(src_stride), size_t DYND_UNUSED(count))
+  {
+  }
+};
+
+TEST(Kernel, Unnamed)
+{
+  clang::CompilerInstance Clang;
+
+  nd::callable::make<my_kernel>(ndt::type("() -> void"), 0);
+
+  std::exit(-1);
+}
