@@ -6,7 +6,7 @@
 #pragma once
 
 #include <dynd/func/callable.hpp>
-#include <dynd/kernels/apply.hpp>
+#include <dynd/kernels/apply_callable_kernel.hpp>
 #include <dynd/kernels/apply_function_kernel.hpp>
 #include <dynd/kernels/construct_then_apply_callable_kernel.hpp>
 
@@ -37,7 +37,7 @@ namespace nd {
     template <kernel_request_t kernreq, typename func_type, typename... T>
     typename std::enable_if<!is_function_pointer<func_type>::value, callable>::type apply(func_type func, T &&... names)
     {
-      typedef as_apply_callable_ck<func_type, arity_of<func_type>::value - sizeof...(T)> ck_type;
+      typedef apply_callable_kernel<func_type, arity_of<func_type>::value - sizeof...(T)> ck_type;
 
       ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>(std::forward<T>(names)...);
 
@@ -54,7 +54,7 @@ namespace nd {
     template <kernel_request_t kernreq, typename func_type, typename... T>
     callable apply(func_type *func, T &&... names)
     {
-      typedef as_apply_callable_ck<func_type *, arity_of<func_type>::value - sizeof...(T)> ck_type;
+      typedef apply_callable_kernel<func_type *, arity_of<func_type>::value - sizeof...(T)> ck_type;
 
       ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>(std::forward<T>(names)...);
 
@@ -87,14 +87,12 @@ namespace nd {
      * Makes an callable out of the provided function object type, specialized
      * for a memory_type such as cuda_device based on the ``kernreq``.
      */
-    template <kernel_request_t kernreq, typename func_type, typename... K, typename... T>
+    template <kernel_request_t kernreq, typename CallableType, typename... K, typename... T>
     callable apply(T &&... names)
     {
-      typedef construct_then_apply_callable_kernel<func_type, K...> ck_type;
-
-      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type, K...>::type>(std::forward<T>(names)...);
-
-      return callable::make<ck_type>(self_tp, 0);
+      typedef construct_then_apply_callable_kernel<CallableType, K...> kernel_type;
+      return callable::make<kernel_type>(
+          ndt::type::make<typename funcproto_of<CallableType, K...>::type>(std::forward<T>(names)...));
     }
 
     /**
