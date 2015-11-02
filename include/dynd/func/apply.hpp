@@ -8,29 +8,25 @@
 #include <dynd/func/callable.hpp>
 #include <dynd/kernels/apply.hpp>
 #include <dynd/kernels/apply_function_kernel.hpp>
+#include <dynd/kernels/construct_then_apply_callable_kernel.hpp>
 
 namespace dynd {
 namespace nd {
   namespace functional {
+
     /**
      * Makes an callable out of function ``func``, using the provided keyword
      * parameter names. This function takes ``func`` as a template
      * parameter, so can call it efficiently.
      */
-    template <kernel_request_t kernreq, typename func_type, func_type func, typename... T>
+    template <typename CallableType, CallableType Callable, typename... T>
     callable apply(T &&... names)
     {
-      typedef apply_function_kernel<func_type, func, arity_of<func_type>::value - sizeof...(T)> CKT;
+      static_assert(all_char_string_params<T...>::value, "All the names must be strings");
 
-      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>(std::forward<T>(names)...);
-
-      return callable::make<CKT>(self_tp, 0);
-    }
-
-    template <typename func_type, func_type func, typename... T>
-    callable apply(T &&... names)
-    {
-      return apply<kernel_request_host, func_type, func>(std::forward<T>(names)...);
+      typedef apply_function_kernel<CallableType, Callable, arity_of<CallableType>::value - sizeof...(T)> kernel_type;
+      return callable::make<kernel_type>(
+          ndt::type::make<typename funcproto_of<CallableType>::type>(std::forward<T>(names)...));
     }
 
     /**
@@ -94,7 +90,7 @@ namespace nd {
     template <kernel_request_t kernreq, typename func_type, typename... K, typename... T>
     callable apply(T &&... names)
     {
-      typedef as_construct_then_apply_callable_ck<func_type, K...> ck_type;
+      typedef construct_then_apply_callable_kernel<func_type, K...> ck_type;
 
       ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type, K...>::type>(std::forward<T>(names)...);
 

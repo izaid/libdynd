@@ -68,7 +68,7 @@ namespace nd {
         // offset < i + offset
 
         std::cout << "left" << std::endl;
-        int i = nh_offset;
+        intptr_t i = nh_offset;
         while (i < std::min((intptr_t)0, src0_size + nh_offset)) {
           std::cout << i << std::endl;
           ++i;
