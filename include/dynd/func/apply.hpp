@@ -16,7 +16,7 @@ namespace nd {
      * parameter names. This function takes ``func`` as a template
      * parameter, so can call it efficiently.
      */
-    template <kernel_request_t kernreq, typename func_type, func_type func, typename... T>
+    template <typename func_type, func_type func, typename... T>
     callable apply()
     {
       typedef as_apply_function_ck<func_type, func, arity_of<func_type>::value - sizeof...(T)> CKT;
@@ -26,22 +26,28 @@ namespace nd {
       return callable::make<CKT>(self_tp, 0);
     }
 
-    template <kernel_request_t kernreq, typename func_type, func_type func, typename... T>
-    callable apply(T &&... names)
+    template <typename func_type, func_type func, size_t N>
+    callable apply(const std::array<const char *, N> &names)
     {
-      typedef as_apply_function_ck<func_type, func, arity_of<func_type>::value - sizeof...(T)> CKT;
+      static const std::initializer_list<int> numbers = {1, 2, 3};
+      constexpr int i = numbers.size();
+      std::cout << i << std::endl;
 
-      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>(
-          std::array<const char *, sizeof...(T)>{{std::forward<T>(names)...}});
+      typedef as_apply_function_ck<func_type, func, arity_of<func_type>::value - N> CKT;
+
+      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>(names);
 
       return callable::make<CKT>(self_tp, 0);
     }
 
-    template <typename func_type, func_type func, typename... T>
-    callable apply(T &&... names)
-    {
-      return apply<kernel_request_host, func_type, func>(std::forward<T>(names)...);
-    }
+    /*
+        template <typename func_type, func_type func, typename... T>
+        callable apply(T &&... names)
+        {
+          return apply<kernel_request_host, func_type, func>(
+              std::initializer_list<const char *>{std::forward<T>(names)...});
+        }
+    */
 
     /**
      * Makes an callable out of the function object ``func``, using the provided
@@ -64,7 +70,7 @@ namespace nd {
       typedef as_apply_callable_ck<func_type, arity_of<func_type>::value - sizeof...(T)> ck_type;
 
       ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>(
-          std::array<const char *, sizeof...(T)>{{std::forward<T>(names)...}});
+          std::initializer_list<const char *>{std::forward<T>(names)...});
 
       return callable::make<ck_type>(self_tp, func, 0);
     }
@@ -92,7 +98,7 @@ namespace nd {
       typedef as_apply_callable_ck<func_type *, arity_of<func_type>::value - sizeof...(T)> ck_type;
 
       ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>(
-          std::array<const char *, sizeof...(T)>{{std::forward<T>(names)...}});
+          std::initializer_list<const char *>{std::forward<T>(names)...});
 
       return callable::make<ck_type>(self_tp, func, 0);
     }
@@ -139,7 +145,7 @@ namespace nd {
       typedef as_construct_then_apply_callable_ck<func_type, K...> ck_type;
 
       ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type, K...>::type>(
-          std::array<const char *, sizeof...(T)>{{std::forward<T>(names)...}});
+          std::initializer_list<const char *>{std::forward<T>(names)...});
 
       return callable::make<ck_type>(self_tp, 0);
     }

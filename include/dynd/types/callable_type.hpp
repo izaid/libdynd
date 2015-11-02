@@ -472,23 +472,38 @@ namespace ndt {
       return callable_type::make(type::make<R>(), tuple_type::make(),
                                  struct_type::make(nd::make_strided_string_array(names.data(), 1), {type::make<A0>()}));
     }
+
+    static type make(const std::initializer_list<const char *> &names)
+    {
+      return callable_type::make(type::make<R>(), tuple_type::make(), struct_type::make(names, {type::make<A0>()}));
+    }
   };
 
-  template <typename R, typename A0, typename... A>
-  struct type::equivalent<R(A0, A...)> {
+  template <typename R, typename A0, typename A1, typename... A>
+  struct type::equivalent<R(A0, A1, A...)> {
     static type make()
     {
-      return callable_type::make(type::make<R>(), {type::make<A0>(), type::make<A>()...});
+      return callable_type::make(type::make<R>(), {type::make<A0>(), type::make<A1>(), type::make<A>()...});
     }
 
-    template <unsigned long N>
-    static type make(std::array<const char *, N> names)
+    template <size_t N>
+    static type make(const std::array<const char *, N> &names)
     {
-      type tp[1 + sizeof...(A)] = {type::make<A0>(), type::make<A>()...};
+      type tp[2 + sizeof...(A)] = {type::make<A0>(), type::make<A1>(), type::make<A>()...};
 
-      return callable_type::make(type::make<R>(), nd::array(tp, 1 + sizeof...(A) - N),
+      return callable_type::make(type::make<R>(), nd::array(tp, 2 + sizeof...(A) - N),
                                  nd::make_strided_string_array(names.data(), N),
-                                 nd::array(tp + (1 + sizeof...(A) - N), N));
+                                 nd::array(tp + (2 + sizeof...(A) - N), N));
+    }
+
+    static type make(const std::initializer_list<const char *> &names)
+    {
+      const int N = names.size();
+
+      type tp[2 + sizeof...(A)] = {type::make<A0>(), type::make<A1>(), type::make<A>()...};
+
+      return callable_type::make(type::make<R>(), nd::array(tp, 2 + sizeof...(A) - N), names,
+                                 nd::array(tp + (2 + sizeof...(A) - N), N));
     }
   };
 
