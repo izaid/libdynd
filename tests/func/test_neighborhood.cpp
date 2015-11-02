@@ -34,6 +34,7 @@ int sum(const nd::strided_vals<int, N> &nh)
 }
 */
 
+/*
 TEST(Neighborhood, Sum1D)
 {
   nd::callable f = nd::functional::neighborhood(nd::functional::apply([](fixed_dim<int> vals) {
@@ -45,6 +46,8 @@ TEST(Neighborhood, Sum1D)
   }));
 
   f(nd::array{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, kwds("shape", nd::array{3}, "offset", nd::array{-2}));
+}
+*/
 
   /*
       a = parse_json("4 * int",
@@ -86,7 +89,6 @@ TEST(Neighborhood, Sum1D)
           af(a, kwds("mask", parse_json("6 * bool", "[false, false, true, true, false, false]"), "offset", parse_json("1
      * int", "[-1]"))));
   */
-}
 
 /*
 TEST(Neighborhood, Sum2D) {
