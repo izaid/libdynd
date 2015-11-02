@@ -17,11 +17,22 @@ namespace nd {
      * parameter, so can call it efficiently.
      */
     template <kernel_request_t kernreq, typename func_type, func_type func, typename... T>
+    callable apply()
+    {
+      typedef as_apply_function_ck<func_type, func, arity_of<func_type>::value - sizeof...(T)> CKT;
+
+      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>();
+
+      return callable::make<CKT>(self_tp, 0);
+    }
+
+    template <kernel_request_t kernreq, typename func_type, func_type func, typename... T>
     callable apply(T &&... names)
     {
       typedef as_apply_function_ck<func_type, func, arity_of<func_type>::value - sizeof...(T)> CKT;
 
-      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>(std::forward<T>(names)...);
+      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>(
+          std::array<const char *, sizeof...(T)>{{std::forward<T>(names)...}});
 
       return callable::make<CKT>(self_tp, 0);
     }
@@ -38,11 +49,22 @@ namespace nd {
      * object.
      */
     template <kernel_request_t kernreq, typename func_type, typename... T>
+    typename std::enable_if<!is_function_pointer<func_type>::value, callable>::type apply(func_type func)
+    {
+      typedef as_apply_callable_ck<func_type, arity_of<func_type>::value - sizeof...(T)> ck_type;
+
+      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>();
+
+      return callable::make<ck_type>(self_tp, func, 0);
+    }
+
+    template <kernel_request_t kernreq, typename func_type, typename... T>
     typename std::enable_if<!is_function_pointer<func_type>::value, callable>::type apply(func_type func, T &&... names)
     {
       typedef as_apply_callable_ck<func_type, arity_of<func_type>::value - sizeof...(T)> ck_type;
 
-      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>(std::forward<T>(names)...);
+      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>(
+          std::array<const char *, sizeof...(T)>{{std::forward<T>(names)...}});
 
       return callable::make<ck_type>(self_tp, func, 0);
     }
@@ -54,12 +76,23 @@ namespace nd {
       return apply<kernel_request_host>(func, std::forward<T>(names)...);
     }
 
+    template <kernel_request_t kernreq, typename func_type>
+    callable apply(func_type *func)
+    {
+      typedef as_apply_callable_ck<func_type *, arity_of<func_type>::value> ck_type;
+
+      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>();
+
+      return callable::make<ck_type>(self_tp, func, 0);
+    }
+
     template <kernel_request_t kernreq, typename func_type, typename... T>
     callable apply(func_type *func, T &&... names)
     {
       typedef as_apply_callable_ck<func_type *, arity_of<func_type>::value - sizeof...(T)> ck_type;
 
-      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>(std::forward<T>(names)...);
+      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>(
+          std::array<const char *, sizeof...(T)>{{std::forward<T>(names)...}});
 
       return callable::make<ck_type>(self_tp, func, 0);
     }
@@ -91,11 +124,22 @@ namespace nd {
      * for a memory_type such as cuda_device based on the ``kernreq``.
      */
     template <kernel_request_t kernreq, typename func_type, typename... K, typename... T>
+    callable apply()
+    {
+      typedef as_construct_then_apply_callable_ck<func_type, K...> ck_type;
+
+      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type, K...>::type>();
+
+      return callable::make<ck_type>(self_tp, 0);
+    }
+
+    template <kernel_request_t kernreq, typename func_type, typename... K, typename... T>
     callable apply(T &&... names)
     {
       typedef as_construct_then_apply_callable_ck<func_type, K...> ck_type;
 
-      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type, K...>::type>(std::forward<T>(names)...);
+      ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type, K...>::type>(
+          std::array<const char *, sizeof...(T)>{{std::forward<T>(names)...}});
 
       return callable::make<ck_type>(self_tp, 0);
     }

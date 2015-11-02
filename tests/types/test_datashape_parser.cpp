@@ -209,9 +209,9 @@ TEST(DataShapeParser, Callable)
 {
   ndt::type tp;
 
-  EXPECT_EQ(ndt::type::make<int(int, int)>(), ndt::type("(int, int) -> int"));
-  EXPECT_EQ(ndt::type::make<int(int, int)>("x"), ndt::type("(int, x: int) -> int"));
-  EXPECT_EQ(ndt::type::make<int(int, int)>("x", "y"), ndt::type("(x: int, y: int) -> int"));
+  EXPECT_EQ(ndt::type::make<int(int, int)>(std::array<const char *, 0>()), ndt::type("(int, int) -> int"));
+  EXPECT_EQ(ndt::type::make<int(int, int)>(std::array<const char *, 1>{{"x"}}), ndt::type("(int, x: int) -> int"));
+  EXPECT_EQ(ndt::type::make<int(int, int)>(std::array<const char *, 2>{{"x", "y"}}), ndt::type("(x: int, y: int) -> int"));
 
   tp = ndt::type("(N * S, func: (M * S) -> T) -> N * T");
   EXPECT_JSON_EQ_ARR("[\"N * S\"]", tp.p("pos_types"));

@@ -467,11 +467,10 @@ namespace ndt {
       return callable_type::make(type::make<R>(), type::make<A0>());
     }
 
-    template <typename T>
-    static type make(T &&name)
+    static type make(const std::array<const char *, 1> &names)
     {
       return callable_type::make(type::make<R>(), tuple_type::make(),
-                                 struct_type::make({std::forward<T>(name)}, {type::make<A0>()}));
+                                 struct_type::make(nd::make_strided_string_array(names.data(), 1), {type::make<A0>()}));
     }
   };
 
@@ -482,13 +481,14 @@ namespace ndt {
       return callable_type::make(type::make<R>(), {type::make<A0>(), type::make<A>()...});
     }
 
-    template <typename... T>
-    static type make(T &&... names)
+    template <unsigned long N>
+    static type make(std::array<const char *, N> names)
     {
       type tp[1 + sizeof...(A)] = {type::make<A0>(), type::make<A>()...};
 
-      return callable_type::make(type::make<R>(), nd::array(tp, 1 + sizeof...(A) - sizeof...(T)), {names...},
-                                 nd::array(tp + (1 + sizeof...(A) - sizeof...(T)), sizeof...(T)));
+      return callable_type::make(type::make<R>(), nd::array(tp, 1 + sizeof...(A) - N),
+                                 nd::make_strided_string_array(names.data(), N),
+                                 nd::array(tp + (1 + sizeof...(A) - N), N));
     }
   };
 
