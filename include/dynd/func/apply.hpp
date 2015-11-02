@@ -29,9 +29,11 @@ namespace nd {
     template <typename func_type, func_type func, size_t N>
     callable apply(const std::array<const char *, N> &names)
     {
+/*
       static constexpr std::initializer_list<int> numbers = {1, 2, 3};
       constexpr int i = numbers.size();
       std::cout << i << std::endl;
+*/
 
       typedef as_apply_function_ck<func_type, func, arity_of<func_type>::value - N> CKT;
 

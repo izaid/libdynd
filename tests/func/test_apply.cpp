@@ -354,16 +354,26 @@ TEST(Apply, Function)
   */
 }
 
-template<typename T, size_t N>
-struct strict_array : std::array<T, N>
-{
-   template<typename... V>
-   strict_array(V... vals) // no &&/forward to simplify
-      : array<T, N>( {{vals...}} )
+template <typename T, size_t N>
+struct strict_array : std::array<T, N> {
+  template <typename... V>
+  strict_array(V... vals) // no &&/forward to simplify
+      : array<T, N>({{vals...}})
   {
-     static_assert(sizeof...(vals) == N, "Please provide exactly 5 values");
-   }
+    static_assert(sizeof...(vals) == N, "Please provide exactly 5 values");
+  }
 };
+
+template <size_t N>
+struct val_holder {
+  static const size_t value = N;
+};
+
+constexpr size_t g(const std::initializer_list<int> &l)
+{
+  constexpr const size_t i = l.size();
+  return i;
+}
 
 TEST(Apply, FunctionWithKeywords)
 {
@@ -373,6 +383,8 @@ TEST(Apply, FunctionWithKeywords)
 
   af = nd::functional::apply<decltype(&func0), &func0>(std::array<const char *, 1>{{"y"}});
   EXPECT_ARRAY_EQ(TestFixture::To(4), af(TestFixture::To(5), kwds("y", TestFixture::To(3))));
+
+  g({1, 2, 3});
 
   /*
     af = nd::functional::apply<decltype(&func0), &func0>("x", "y");
