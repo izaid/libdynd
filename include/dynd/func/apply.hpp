@@ -16,10 +16,10 @@ namespace nd {
      * parameter names. This function takes ``func`` as a template
      * parameter, so can call it efficiently.
      */
-    template <typename func_type, func_type func, typename... T>
+    template <typename func_type, func_type func>
     callable apply()
     {
-      typedef as_apply_function_ck<func_type, func, arity_of<func_type>::value - sizeof...(T)> CKT;
+      typedef as_apply_function_ck<func_type, func, arity_of<func_type>::value> CKT;
 
       ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>();
 
@@ -29,7 +29,7 @@ namespace nd {
     template <typename func_type, func_type func, size_t N>
     callable apply(const std::array<const char *, N> &names)
     {
-      static const std::initializer_list<int> numbers = {1, 2, 3};
+      static constexpr std::initializer_list<int> numbers = {1, 2, 3};
       constexpr int i = numbers.size();
       std::cout << i << std::endl;
 
@@ -54,10 +54,10 @@ namespace nd {
      * keyword parameter names. This version makes a copy of provided ``func``
      * object.
      */
-    template <kernel_request_t kernreq, typename func_type, typename... T>
+    template <kernel_request_t kernreq, typename func_type>
     typename std::enable_if<!is_function_pointer<func_type>::value, callable>::type apply(func_type func)
     {
-      typedef as_apply_callable_ck<func_type, arity_of<func_type>::value - sizeof...(T)> ck_type;
+      typedef as_apply_callable_ck<func_type, arity_of<func_type>::value> ck_type;
 
       ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>();
 
@@ -129,7 +129,7 @@ namespace nd {
      * Makes an callable out of the provided function object type, specialized
      * for a memory_type such as cuda_device based on the ``kernreq``.
      */
-    template <kernel_request_t kernreq, typename func_type, typename... K, typename... T>
+    template <kernel_request_t kernreq, typename func_type, typename... K>
     callable apply()
     {
       typedef as_construct_then_apply_callable_ck<func_type, K...> ck_type;

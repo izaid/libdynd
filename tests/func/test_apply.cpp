@@ -354,6 +354,17 @@ TEST(Apply, Function)
   */
 }
 
+template<typename T, size_t N>
+struct strict_array : std::array<T, N>
+{
+   template<typename... V>
+   strict_array(V... vals) // no &&/forward to simplify
+      : array<T, N>( {{vals...}} )
+  {
+     static_assert(sizeof...(vals) == N, "Please provide exactly 5 values");
+   }
+};
+
 TEST(Apply, FunctionWithKeywords)
 {
   typedef Apply<HostKernelRequest> TestFixture;
