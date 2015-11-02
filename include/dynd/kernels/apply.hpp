@@ -11,6 +11,7 @@
 #include <dynd/gfunc/call_gcallable.hpp>
 
 namespace dynd {
+
 namespace detail {
 
   template <typename func_type, typename... B>
@@ -37,7 +38,7 @@ namespace detail {
   struct funcproto<R (T::*)(A...) const, B...> {
     typedef typename funcproto<R(A...), B...>::type type;
   };
-} // naemspace dynd::detail
+} // namespace dynd::detail
 
 template <typename func_type, typename... B>
 struct funcproto_of {
@@ -96,30 +97,6 @@ namespace nd {
       }
     };
 
-    template <typename T, int N, size_t I>
-    struct apply_arg<const nd::strided_vals<T, N> &, I> {
-      nd::strided_vals<T, N> m_vals;
-
-      apply_arg(const ndt::type &DYND_UNUSED(tp), const char *arrmeta, const nd::array *kwds)
-      {
-        m_vals.set_data(NULL, reinterpret_cast<const size_stride_t *>(arrmeta),
-                        reinterpret_cast<start_stop_t *>(kwds[3].as<intptr_t>()));
-
-        const nd::array &mask = kwds[2];
-        if (mask.is_missing()) {
-          m_vals.set_mask(NULL);
-        } else {
-          m_vals.set_mask(mask.get_readonly_originptr(), reinterpret_cast<const size_stride_t *>(mask.get_arrmeta()));
-        }
-      }
-
-      nd::strided_vals<T, N> &get(char *data)
-      {
-        m_vals.set_data(data);
-        return m_vals;
-      }
-    };
-
     template <typename ElementType, size_t I>
     struct apply_arg<fixed_dim<ElementType>, I> {
       fixed_dim<ElementType> value;
@@ -155,14 +132,8 @@ namespace nd {
     struct apply_kwd {
       T m_val;
 
-      apply_kwd(nd::array val)
-      //        : m_val(val.as<T>())
+      apply_kwd(nd::array val) : m_val(val.as<T>())
       {
-        if (val.get_type().get_type_id() == pointer_type_id) {
-          m_val = val.f("dereference").as<T>();
-        } else {
-          m_val = val.as<T>();
-        }
       }
 
       DYND_CUDA_HOST_DEVICE T get()
