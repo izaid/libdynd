@@ -7,6 +7,7 @@
 
 #include <dynd/func/callable.hpp>
 #include <dynd/kernels/apply.hpp>
+#include <dynd/kernels/apply_function_kernel.hpp>
 
 namespace dynd {
 namespace nd {
@@ -19,7 +20,7 @@ namespace nd {
     template <kernel_request_t kernreq, typename func_type, func_type func, typename... T>
     callable apply(T &&... names)
     {
-      typedef as_apply_function_ck<func_type, func, arity_of<func_type>::value - sizeof...(T)> CKT;
+      typedef apply_function_kernel<func_type, func, arity_of<func_type>::value - sizeof...(T)> CKT;
 
       ndt::type self_tp = ndt::type::make<typename funcproto_of<func_type>::type>(std::forward<T>(names)...);
 
