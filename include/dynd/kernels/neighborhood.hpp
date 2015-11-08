@@ -8,6 +8,7 @@
 #include <algorithm>
 
 #include <dynd/kernels/base_kernel.hpp>
+#include <dynd/kernels/base_virtual_kernel.hpp>
 #include <dynd/types/substitute_shape.hpp>
 
 namespace dynd {
@@ -29,17 +30,20 @@ namespace nd {
       struct data_type {
         ndt::type child_src_tp;
         size_stride_t child_src_arrmeta[5];
+        intptr_t shared_data_offset;
 
         const ndt::type *src_tp;
         const char *src_arrmeta;
 
+        intptr_t ondim;
         intptr_t ndim;
         intptr_t *shape;
         int *offset;
         std::shared_ptr<bool> out_of_bounds;
 
         data_type(const ndt::type *src_tp, intptr_t ndim, int *shape, int *offset)
-            : src_tp(src_tp), src_arrmeta(NULL), ndim(ndim), offset(offset), out_of_bounds(std::make_shared<bool>())
+            : src_tp(src_tp), src_arrmeta(NULL), ondim(ndim), ndim(ndim), offset(offset),
+              out_of_bounds(std::make_shared<bool>())
         {
           this->shape = new intptr_t[ndim];
           for (int i = 0; i < ndim; ++i) {
@@ -78,18 +82,39 @@ namespace nd {
         }
       };
 
+      struct shared_data_type {
+        bool out_of_bounds;
+
+        static intptr_t instantiate(char *DYND_UNUSED(static_data), size_t DYND_UNUSED(data_size),
+                                    char *DYND_UNUSED(data), void *ckb, intptr_t ckb_offset,
+                                    const ndt::type &DYND_UNUSED(dst_tp), const char *DYND_UNUSED(dst_arrmeta),
+                                    intptr_t DYND_UNUSED(nsrc), const ndt::type *DYND_UNUSED(src_tp),
+                                    const char *const *DYND_UNUSED(src_arrmeta), kernel_request_t DYND_UNUSED(kernreq),
+                                    const eval::eval_context *DYND_UNUSED(ectx), intptr_t DYND_UNUSED(nkwd),
+                                    const nd::array *DYND_UNUSED(kwds),
+                                    const std::map<std::string, ndt::type> &DYND_UNUSED(tp_vars))
+        {
+          size_t metadata_size = sizeof(shared_data_type);
+          reinterpret_cast<ckernel_builder<kernel_request_host> *>(ckb)->reserve(ckb_offset + metadata_size);
+
+          return ckb_offset + metadata_size;
+        }
+      };
+
       intptr_t dst_stride;
       intptr_t src0_offset;
       intptr_t src0_stride;
       intptr_t offset;
       intptr_t counts[3];
       std::shared_ptr<bool> out_of_bounds;
+      intptr_t child_offset;
       intptr_t boundary_child_offset;
+      intptr_t shared_data_offset;
 
       neighborhood_kernel(intptr_t dst_stride, intptr_t src0_size, intptr_t src0_stride, intptr_t size, intptr_t offset,
                           const std::shared_ptr<bool> &out_of_bounds)
           : dst_stride(dst_stride), src0_offset(offset * src0_stride), src0_stride(src0_stride), offset(offset),
-            out_of_bounds(out_of_bounds)
+            out_of_bounds(out_of_bounds), child_offset(sizeof(neighborhood_kernel))
       {
         counts[0] = std::min((intptr_t)0, src0_size + offset);
         counts[1] = std::min(src0_size + offset, src0_size - size + 1);
@@ -100,7 +125,7 @@ namespace nd {
 
       void single(char *dst, char *const *src)
       {
-        ckernel_prefix *child = this->get_child();
+        ckernel_prefix *child = this->get_child(child_offset);
         ckernel_prefix *boundary_child = this->get_child(boundary_child_offset);
 
         char *src0 = src[0] + src0_offset;
@@ -189,15 +214,22 @@ namespace nd {
         }
 
         if (reinterpret_cast<data_type *>(data)->ndim == 0) {
+          reinterpret_cast<data_type *>(data)->shared_data_offset = ckb_offset;
+          ckb_offset = shared_data_type::instantiate(static_data, data_size, data, ckb, ckb_offset, dst_tp, dst_arrmeta,
+                                                     nsrc, src_tp, src_arrmeta, kernreq, ectx, nkwd, kwds, tp_vars);
+
           const callable &child = *reinterpret_cast<callable *>(static_data);
           const callable &boundary_child = reinterpret_cast<static_data_type *>(static_data)->boundary_child;
 
           const char *child_src_arrmeta =
               reinterpret_cast<char *>(reinterpret_cast<data_type *>(data)->child_src_arrmeta);
+
           ckb_offset = child.get()->instantiate(child.get()->static_data, child.get()->data_size, NULL, ckb, ckb_offset,
                                                 child_dst_tp, child_dst_arrmeta, nsrc,
                                                 &reinterpret_cast<data_type *>(data)->child_src_tp, &child_src_arrmeta,
                                                 kernel_request_single, ectx, nkwd - 3, kwds + 3, tp_vars);
+          neighborhood_kernel::get_self(reinterpret_cast<ckernel_builder<kernel_request_host> *>(ckb),
+                                        neighborhood_offset)->child_offset += sizeof(shared_data_type);
           neighborhood_kernel::get_self(reinterpret_cast<ckernel_builder<kernel_request_host> *>(ckb),
                                         neighborhood_offset)->boundary_child_offset = ckb_offset - neighborhood_offset;
 
@@ -219,8 +251,13 @@ namespace nd {
         neighborhood_kernel::get_self(reinterpret_cast<ckernel_builder<kernel_request_host> *>(ckb),
                                       neighborhood_offset)->boundary_child_offset = sizeof(neighborhood_kernel);
 
-        return instantiate(static_data, data_size, data, ckb, ckb_offset, child_dst_tp, child_dst_arrmeta, nsrc,
-                           child_src_tp, child_src_arrmeta, kernel_request_single, ectx, nkwd, kwds, tp_vars);
+        ckb_offset = instantiate(static_data, data_size, data, ckb, ckb_offset, child_dst_tp, child_dst_arrmeta, nsrc,
+                                 child_src_tp, child_src_arrmeta, kernel_request_single, ectx, nkwd, kwds, tp_vars);
+//        neighborhood_kernel::get_self(reinterpret_cast<ckernel_builder<kernel_request_host> *>(ckb),
+  //                                    neighborhood_offset)->shared_data_offset =
+    //        reinterpret_cast<data_type *>(data)->shared_data_offset;
+
+        return ckb_offset;
       }
     };
 

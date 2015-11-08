@@ -23,8 +23,6 @@ using namespace dynd;
 
 TEST(Neighborhood, Sum1D)
 {
-  return;
-
   nd::callable f = nd::functional::neighborhood(nd::functional::apply([](fixed_dim<int> vals) {
                                                   int res = 0;
                                                   for (auto val : vals) {
@@ -51,8 +49,6 @@ TEST(Neighborhood, Sum1D)
 
 TEST(Neighborhood, Sum2D)
 {
-  return;
-
   nd::callable f = nd::functional::neighborhood(nd::functional::apply([](fixed_dim<fixed_dim<int>> vals) {
                                                   int res = 0;
                                                   for (auto vals0 : vals) {
@@ -138,8 +134,6 @@ TEST(Neighborhood, Sum2D)
 
 TEST(Neighborhood, Sum3D)
 {
-  return;
-
   nd::callable f = nd::functional::neighborhood(nd::functional::apply([](fixed_dim<fixed_dim<fixed_dim<int>>> vals) {
                                                   int res = 0;
                                                   for (auto vals0 : vals) {
@@ -205,6 +199,8 @@ TEST(Neighborhood, Sum3D)
   -1,
   -1]"))));
   */
+
+//  std::exit(-1);
 }
 
 /*
