@@ -485,7 +485,7 @@ endif()
 
 ExternalProject_Add(sparsehash
   PREFIX thirdparty/sparsehash
-  URL ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/sparsehash-sparsehash-2.0.3.zip
+  URL ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/sparsehash-sparsehash-2.0.3
   SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/thirdparty/sparsehash/src/sparsehash
   CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/thirdparty/sparsehash/src/sparsehash/configure
   BUILD_IN_SOURCE 1
