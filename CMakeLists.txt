@@ -481,6 +481,19 @@ else()
         )
 endif()
 
+include(ExternalProject)
+
+ExternalProject_Add(sparsehash
+  PREFIX thirdparty/sparsehash
+  URL ${CMAKE_SOURCE_DIR}/thirdparty/sparsehash
+  SOURCE_DIR ${CMAKE_BINARY_DIR}/thirdparty/sparsehash/src/sparsehash
+  CONFIGURE_COMMAND ${CMAKE_BINARY_DIR}/thirdparty/sparsehash/src/sparsehash/configure
+  BUILD_IN_SOURCE 1
+  INSTALL_COMMAND ""
+)
+include_directories(${CMAKE_BINARY_DIR}/thirdparty/sparsehash/src/sparsehash/src)
+add_dependencies(libdyndt sparsehash)
+
 set_property(
     TARGET libdyndt
     PROPERTY COMPILE_DEFINITIONS DYNDT_EXPORT
