@@ -1,3 +1,12 @@
+//
+// Copyright (C) 2011-15 DyND Developers
+// BSD 2-Clause License, see LICENSE.txt
+//
+
+#include <sparsehash/dense_hash_map>
+#include <sparsehash/sparse_hash_map>
+
+#include <dynd/types/type_id.hpp>
 
 namespace dynd {
 

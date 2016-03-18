@@ -409,6 +409,7 @@ set(libdynd_SRC
 
 include_directories(
     include
+    thirdparty
     thirdparty/utf8/source
     )
 
