@@ -84,7 +84,7 @@ namespace detail {
 
   private:
     std::vector<value_type> m_values;
-    google::sparse_hash_map<key_type, iterator> m_cache;
+    std::map<key_type, iterator> m_cache;
 
   public:
     dispatch_map() = default;
