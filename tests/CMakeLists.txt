@@ -14,9 +14,9 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # The gtest macro GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_
     # doesn't work to suppress unreachable code warnings with recent versions
     # of clang, so disable that warning for the tests so they compile properly.
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_USE_OWN_TR1_TUPLE=1 -Wno-unused-value -Wno-ignored-attributes")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-value -Wno-ignored-attributes")
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_USE_OWN_TR1_TUPLE=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
 set(tests_SRC
