@@ -6,6 +6,8 @@
 cmake_minimum_required(VERSION 2.8.11)
 project(libdynd)
 
+include(ExternalProject)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
 set(LIB_SUFFIX "" CACHE STRING
@@ -481,11 +483,9 @@ else()
         )
 endif()
 
-include(ExternalProject)
-
 ExternalProject_Add(sparsehash
   PREFIX thirdparty/sparsehash
-  URL ${CMAKE_SOURCE_DIR}/thirdparty/sparsehash-sparsehash-2.0.3
+  URL ${CMAKE_SOURCE_DIR}/thirdparty/sparsehash-sparsehash-2.0.3.zip
   SOURCE_DIR ${CMAKE_BINARY_DIR}/thirdparty/sparsehash/src/sparsehash
   CONFIGURE_COMMAND ${CMAKE_BINARY_DIR}/thirdparty/sparsehash/src/sparsehash/configure
   BUILD_IN_SOURCE 1
