@@ -104,6 +104,7 @@ TEST(DispatchMap, Unary)
   EXPECT_EQ(map_type::value_type(any_kind_id, 0), *map.find(option_id));
 }
 
+/*
 TEST(DispatchMap, Binary)
 {
   typedef dispatch_map<int, 2> map_type;
@@ -119,3 +120,4 @@ TEST(DispatchMap, Binary)
   EXPECT_EQ(map_type::value_type({any_kind_id, int64_id}, 0), *map.find({option_id, int64_id}));
   EXPECT_EQ(map.end(), map.find({int64_id, int32_id}));
 }
+*/

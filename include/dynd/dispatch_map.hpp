@@ -84,7 +84,7 @@ namespace detail {
 
   private:
     std::vector<value_type> m_values;
-    std::map<key_type, iterator> m_cache;
+    google::sparse_hash_map<key_type, iterator> m_cache;
 
   public:
     dispatch_map() = default;
@@ -164,9 +164,11 @@ class dispatch_map<MappedType, 1> : public detail::dispatch_map<type_id_t, Mappe
   using detail::dispatch_map<type_id_t, MappedType>::dispatch_map;
 };
 
+/*
 template <typename MappedType, size_t N>
 class dispatch_map<MappedType, N> : public detail::dispatch_map<std::array<type_id_t, N>, MappedType> {
   using detail::dispatch_map<std::array<type_id_t, N>, MappedType>::dispatch_map;
 };
+*/
 
 } // namespace dynd
