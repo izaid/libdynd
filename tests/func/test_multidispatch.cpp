@@ -3,13 +3,13 @@
 // BSD 2-Clause License, see LICENSE.txt
 //
 
-#include <iostream>
-#include <stdexcept>
 #include <algorithm>
 #include <cmath>
+#include <iostream>
+#include <stdexcept>
 
-#include "inc_gtest.hpp"
 #include "dynd_assertions.hpp"
+#include "inc_gtest.hpp"
 
 #include <dynd/functional.hpp>
 #include <dynd/random.hpp>
@@ -209,3 +209,23 @@ TEST(Multidispatch, BinaryWithPermutation)
   EXPECT_THROW(func(int32(), float16()), runtime_error);
 }
 */
+
+struct tree_node {
+//  T value;
+  std::vector<tree_node> children;
+};
+
+void build_tree(size_t nsrc, const ndt::type *DYND_UNUSED(expected_tp)) {
+  if (nsrc == 0) {
+    return;
+  }
+}
+
+TEST(Multidispatch, X) {
+  ndt::type src_tp[2] = {ndt::make_type<int>(), ndt::make_type<double>()};
+
+  build_tree(2, src_tp, src_tp);
+
+  // ...
+  std::exit(-1);
+}
