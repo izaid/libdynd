@@ -74,7 +74,7 @@ nd::callable make_assign() {
   dispatcher.insert(nd::make_callable<nd::assign_callable<bool1, dynd::string>>());
   dispatcher.insert({nd::make_callable<nd::option_to_value_callable>(),
                      nd::make_callable<nd::assign_callable<ndt::option_type, ndt::option_type>>(),
-                     nd::make_callable<nd::assignment_option_callable>()});
+                     nd::make_callable<nd::assign_callable<ndt::option_type, ndt::scalar_kind_type>>()});
   dispatcher.insert(nd::make_callable<nd::assign_callable<ndt::option_type, dynd::string>>());
   dispatcher.insert(nd::make_callable<nd::assign_callable<ndt::option_type, ndt::float_kind_type>>());
   dispatcher.insert(nd::make_callable<nd::assign_callable<dynd::string, ndt::type>>());

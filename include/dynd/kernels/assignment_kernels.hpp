@@ -1451,5 +1451,8 @@ namespace nd {
   template <typename ReturnType, typename Arg0Type>
   struct assignment_kernel : detail::assignment_virtual_kernel<ReturnType, Arg0Type> {};
 
+  template <typename ReturnType, typename Arg0Type>
+  struct assign_kernel;
+
 } // namespace dynd::nd
 } // namespace dynd

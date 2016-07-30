@@ -922,37 +922,66 @@ namespace nd {
     }
   };
 
-  class assignment_option_callable : public base_callable {
+  template <>
+  class assign_callable<ndt::option_type, ndt::scalar_kind_type> : public base_callable {
   public:
-    assignment_option_callable() : base_callable(ndt::type("(Scalar) -> ?Any")) {}
-
-    ndt::type resolve(base_callable *DYND_UNUSED(caller), char *DYND_UNUSED(data), call_graph &cg,
-                      const ndt::type &dst_tp, size_t DYND_UNUSED(nsrc), const ndt::type *src_tp, size_t nkwd,
-                      const array *kwds, const std::map<std::string, ndt::type> &tp_vars) {
-
-      ndt::type val_dst_tp =
-          dst_tp.get_id() == option_id ? dst_tp.extended<ndt::option_type>()->get_value_type() : dst_tp;
-      ndt::type val_src_tp =
-          src_tp[0].get_id() == option_id ? src_tp[0].extended<ndt::option_type>()->get_value_type() : src_tp[0];
-      assign->resolve(this, nullptr, cg, val_dst_tp, 1, &val_src_tp, nkwd, kwds, tp_vars);
-
-      return dst_tp;
-    }
+    assign_callable()
+        : base_callable(
+              ndt::make_type<ndt::callable_type>(ndt::make_type<ndt::option_type>(ndt::make_type<ndt::any_kind_type>()),
+                                                 {ndt::make_type<ndt::scalar_kind_type>()})) {}
 
     /*
-        void instantiate(call_node *&node, char *DYND_UNUSED(data), kernel_builder &kb, const ndt::type &dst_tp,
-                         const char *dst_arrmeta, intptr_t DYND_UNUSED(nsrc), const ndt::type *src_tp,
-                         const char *const *src_arrmeta, kernel_request_t kernreq, intptr_t nkwd, const nd::array *kwds,
-                         const std::map<std::string, ndt::type> &tp_vars) {
+        ndt::type resolve(base_callable *DYND_UNUSED(caller), char *DYND_UNUSED(data), call_graph &cg,
+                          const ndt::type &dst_tp, size_t DYND_UNUSED(nsrc), const ndt::type *src_tp, size_t nkwd,
+                          const array *kwds, const std::map<std::string, ndt::type> &tp_vars) {
           ndt::type val_dst_tp =
               dst_tp.get_id() == option_id ? dst_tp.extended<ndt::option_type>()->get_value_type() : dst_tp;
           ndt::type val_src_tp =
               src_tp[0].get_id() == option_id ? src_tp[0].extended<ndt::option_type>()->get_value_type() : src_tp[0];
-          assign->instantiate(node, NULL, ckb, val_dst_tp, dst_arrmeta, 1, &val_src_tp, src_arrmeta, kernreq, nkwd,
-       kwds,
-                              tp_vars);
+          assign->resolve(this, nullptr, cg, val_dst_tp, 1, &val_src_tp, nkwd, kwds, tp_vars);
+
+          return dst_tp;
         }
     */
+
+    ndt::type resolve(base_callable *DYND_UNUSED(caller), char *DYND_UNUSED(data), call_graph &cg,
+                      const ndt::type &dst_tp, size_t DYND_UNUSED(nsrc), const ndt::type *src_tp, size_t nkwd,
+                      const array *kwds, const std::map<std::string, ndt::type> &tp_vars) {
+      cg.emplace_back([](kernel_builder &kb, kernel_request_t kernreq, char *DYND_UNUSED(data), const char *dst_arrmeta,
+                         size_t nsrc, const char *const *src_arrmeta) {
+        intptr_t ckb_offset = kb.size();
+        intptr_t root_ckb_offset = ckb_offset;
+        typedef detail::assignment_kernel<ndt::option_type, ndt::option_type, assign_error_nocheck> self_type;
+
+        kb.emplace_back<self_type>(kernreq);
+        ckb_offset = kb.size();
+        // instantiate src_is_avail
+        kb(kernreq | kernel_request_data_only, nullptr, nullptr, nsrc, src_arrmeta);
+
+        ckb_offset = kb.size();
+        // instantiate dst_assign_na
+        kb.reserve(ckb_offset + sizeof(kernel_prefix));
+        self_type *self = kb.get_at<self_type>(root_ckb_offset);
+        self->m_dst_assign_na_offset = ckb_offset - root_ckb_offset;
+        kb(kernreq | kernel_request_data_only, nullptr, dst_arrmeta, nsrc, nullptr);
+
+        ckb_offset = kb.size();
+        // instantiate value_assign
+        kb.reserve(ckb_offset + sizeof(kernel_prefix));
+        self = kb.get_at<self_type>(root_ckb_offset);
+        self->m_value_assign_offset = ckb_offset - root_ckb_offset;
+        kb(kernreq | kernel_request_data_only, nullptr, dst_arrmeta, 1, src_arrmeta);
+      });
+
+      ndt::type is_na_src_tp[1] = {ndt::make_type<ndt::option_type>(src_tp[0])};
+      is_na->resolve(this, nullptr, cg, ndt::make_type<bool1>(), 1, is_na_src_tp, nkwd, kwds, tp_vars);
+      assign_na->resolve(this, nullptr, cg, dst_tp, 1, nullptr, nkwd, kwds, tp_vars);
+
+      assign->resolve(this, nullptr, cg, dst_tp.extended<ndt::option_type>()->get_value_type(), 1, src_tp, nkwd, kwds,
+                      tp_vars);
+
+      return dst_tp;
+    }
   };
 
 } // namespace dynd::nd
